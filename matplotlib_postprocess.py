@@ -1,6 +1,7 @@
 from pathlib import Path
 from omegaconf import OmegaConf
 import nbformat as nbf
+import subprocess
 
 from utils import read_jsonl
 
@@ -53,6 +54,8 @@ if __name__ == "__main__":
     config = OmegaConf.load(config_path)
     dataset_folder = Path(config.matplotlib_dataset_path)
     code_split_results = read_jsonl(dataset_folder / "gpt_response.jsonl")
+    # first line is model prompt
+    code_split_results = code_split_results[1:]
 
     for gpt_response in code_split_results:
         idx = gpt_response["id"]
@@ -60,15 +63,27 @@ if __name__ == "__main__":
         nb_path = dp_folder / 'split_data.ipynb'
         code_blocks = get_code_blocks(gpt_response)
 
+        # we assume that the code block is first, but just in case, I formulate it is penultimate
+        data_block = code_blocks[-2]
+        data_block += "\ndf.to_csv('data.csv', index=False)"
+        data_block_file = dp_folder / 'data_block.py'
+        with open(data_block_file, 'w') as f:
+            f.write(data_block)
+        # run data script to generate the data file
+        subprocess.run(['python', data_block_file], cwd=dp_folder)
+
+        # add printing df into notebook
+        code_blocks[-2] += "\ndf.head(15)"
+
+        # add a block with full plotting script to be able to compare results and code
         code_file = dp_folder / "plot.py"
         with open(code_file, "r") as f:
             code_joined = f.read()
         code_blocks.append(code_joined)
 
-        data_block = code_blocks[0]
-        data_block += "\ndf.to_csv('data.csv', index=False)"
-        data_block_name = dp_folder / 'data_block.py'
-        with open(data_block_name, 'w') as f:
-            f.write(data_block)
-
         build_new_nb(code_blocks, nb_path)
+
+        # run the notebook to generate all outputs
+        cmd = f'jupyter nbconvert --execute --to notebook --inplace "{nb_path}"'
+        subprocess.call(cmd, shell=True)
+
