@@ -2,6 +2,7 @@ from pathlib import Path
 from omegaconf import OmegaConf
 import nbformat as nbf
 import subprocess
+from tqdm import tqdm
 
 from utils import read_jsonl
 
@@ -57,23 +58,24 @@ if __name__ == "__main__":
     # first line is model prompt
     code_split_results = code_split_results[1:]
 
-    for gpt_response in code_split_results:
+    for gpt_response in tqdm(code_split_results):
         idx = gpt_response["id"]
         dp_folder = dataset_folder / str(idx)
         nb_path = dp_folder / 'split_data.ipynb'
         code_blocks = get_code_blocks(gpt_response)
 
-        # we assume that the code block is first, but just in case, I formulate it is penultimate
-        data_block = code_blocks[-2]
-        data_block += "\ndf.to_csv('data.csv', index=False)"
-        data_block_file = dp_folder / 'data_block.py'
-        with open(data_block_file, 'w') as f:
-            f.write(data_block)
-        # run data script to generate the data file
-        subprocess.run(['python', data_block_file], cwd=dp_folder)
+        if len(code_blocks) >= 2:
+            # we assume that the code block is first, but just in case, I formulate it is penultimate
+            data_block = code_blocks[-2]
+            data_block += "\ndf.to_csv('data.csv', index=False)"
+            data_block_file = dp_folder / 'data_block.py'
+            with open(data_block_file, 'w') as f:
+                f.write(data_block)
+            # run data script to generate the data file
+            subprocess.run(['python', data_block_file], cwd=dp_folder)
 
-        # add printing df into notebook
-        code_blocks[-2] += "\ndf.head(15)"
+            # add printing df into notebook
+            code_blocks[-2] += "\ndf.head(15)"
 
         # add a block with full plotting script to be able to compare results and code
         code_file = dp_folder / "plot.py"
@@ -86,4 +88,3 @@ if __name__ == "__main__":
         # run the notebook to generate all outputs
         cmd = f'jupyter nbconvert --execute --to notebook --inplace "{nb_path}"'
         subprocess.call(cmd, shell=True)
-
