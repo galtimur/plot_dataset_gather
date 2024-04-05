@@ -4,7 +4,12 @@ import nbformat as nbf
 
 from utils import read_jsonl
 
-def filter_prints(code):
+def filter_prints(code: str):
+
+    '''
+    remove lines with prints
+    '''
+
     lines = code.split("\n")
     lines_cleaned = [line for line in lines if not line.startswith("print(")]
     code_cleaned = "\n".join(lines_cleaned)
@@ -12,6 +17,11 @@ def filter_prints(code):
     return code_cleaned
 
 def get_code_blocks(gpt_response: dict):
+
+    '''
+    parse codeblocks (highlighted by ```) from LLM response
+    '''
+
     code_start_seq = "python\n"
     cut = len(code_start_seq)
     code = gpt_response["prediction"]
@@ -25,7 +35,11 @@ def get_code_blocks(gpt_response: dict):
 
     return code_blocks
 
-def build_new_nb(blocks, nb_path):
+def build_new_nb(blocks: list, nb_path):
+
+    '''
+    save codeblocks into notebook
+    '''
 
     nb = nbf.v4.new_notebook()
     nb['cells'] = [nbf.v4.new_code_cell(block) for block in blocks]
@@ -42,8 +56,19 @@ if __name__ == "__main__":
 
     for gpt_response in code_split_results:
         idx = gpt_response["id"]
-        nb_path = f'out/test_notebook_{idx}.ipynb'
+        dp_folder = dataset_folder / str(idx)
+        nb_path = dp_folder / 'split_data.ipynb'
         code_blocks = get_code_blocks(gpt_response)
-        build_new_nb(code_blocks, nb_path)
 
-# %%
+        code_file = dp_folder / "plot.py"
+        with open(code_file, "r") as f:
+            code_joined = f.read()
+        code_blocks.append(code_joined)
+
+        data_block = code_blocks[0]
+        data_block += "\ndf.to_csv('data.csv', index=False)"
+        data_block_name = dp_folder / 'data_block.py'
+        with open(data_block_name, 'w') as f:
+            f.write(data_block)
+
+        build_new_nb(code_blocks, nb_path)
