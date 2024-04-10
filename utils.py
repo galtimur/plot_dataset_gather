@@ -2,6 +2,7 @@ import os
 import json
 from pathlib import Path
 import pandas as pd
+import nbformat as nbf
 
 def get_dp_folders(folder_path):
     subfolder_list = []
@@ -61,8 +62,16 @@ def read_task_responses(response_file):
             if entry_id is not None:
                 message = entry['choices'][0]['message']['content']
                 if message:
-                    if message.startswith("TASK: "):
-                        message = message[6:]
+                    if message.startswith("TASK:"):
+                        message = message[5:].lstrip('\n ').replace("**", "")
                     response_dict[entry_id] = message
 
     return response_dict
+
+def read_nb_data_cell(nb_path):
+
+    with open(nb_path) as f:
+        nb = nbf.read(f, as_version=4)
+
+    data_code = nb.cells[0]['source']
+    return data_code
