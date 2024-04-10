@@ -5,8 +5,9 @@ import pandas as pd
 
 def get_dp_folders(folder_path):
     subfolder_list = []
+    dp_folders = sorted(os.listdir(folder_path))
 
-    for name in os.listdir(folder_path):
+    for name in dp_folders:
 
         full_path = os.path.join(folder_path, name)
         if os.path.isdir(full_path) and name.isdigit():
@@ -50,3 +51,18 @@ def get_pycharm_dataframe_description(df: pd.DataFrame) -> str:
             descr = descr + f', Mean: {mean}, Std. Deviation: {std}, Min: {minimum}, Max: {maximum}'
         descr_lines.append(descr)
     return '\n'.join(descr_lines)
+
+def read_task_responses(response_file):
+    response_dict = {}
+    with open(response_file, 'r') as file:
+        for line in file:
+            entry = json.loads(line)
+            entry_id = entry.get('id')
+            if entry_id is not None:
+                message = entry['choices'][0]['message']['content']
+                if message:
+                    if message.startswith("TASK: "):
+                        message = message[6:]
+                    response_dict[entry_id] = message
+
+    return response_dict

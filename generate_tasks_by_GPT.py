@@ -6,16 +6,19 @@ import glob
 import os
 import time
 import re
+import random
 
 from utils import get_dp_folders
 from GPT4V_backbone import GPT4V
+
+random.seed(42)
 
 config_path = "configs/config.yaml"
 config = OmegaConf.load(config_path)
 openai_token_file = config.openai_token_file
 dataset_folder = config.dataset_valid_step_1
 
-output_file = Path(dataset_folder) / "gpt_tasks_detailed.jsonl"
+output_file = Path(dataset_folder) / "gpt_tasks.jsonl"
 
 existing_ids = []
 if os.path.exists(output_file):
@@ -28,31 +31,31 @@ if os.path.exists(output_file):
 with open(openai_token_file, "r") as f:
     openai_token = f.read()
 
-instruction_1 = "Write the detailed TASK to write a code for plotting the given pandas dataframe. Code and dataframe summary is given below. Result of the generated plot image(s) is given below.\n"
-instruction_2 = "\nWrite the detailed TASK to write a CODE for plotting the given pandas dataframe (SUMMARY given), to produce plot image (image given at the end). Do not gemerate dataframe, imply that it is given. Write only task after word TASK."
+with open("prompts/task_gen.json", 'r') as f:
+    instructs = f.read()
+    instructs = json.loads(instructs)
 
 def generate_request(code: str, df_summary: str):
 
     code_text = f"CODE:\n{code}"
     df_text = f"Dataframe SUMMARY:\n{df_summary}"
 
-    request = [instruction_1, code_text, df_text, instruction_2]
+    request = [instructs["part 1"], code_text, df_text, instructs["part 2"]]
     request = "\n".join(request)
 
     return request
 
-system_prompt = "You are a helpful programming assistant proficient in python, matplotlib and pandas dataframes."
-gpt4v = GPT4V(api_key=openai_token, system_prompt=system_prompt)
-
-prompts = {"system prompt": system_prompt, "instruction_1": instruction_1, "instruction_2": instruction_2}
+gpt4v = GPT4V(api_key=openai_token, system_prompt=instructs["system prompt"])
 
 if not os.path.exists(output_file):
     with open(output_file, "a") as f:
-        json.dump(prompts, f)
+        json.dump(instructs, f)
         f.write("\n")
 
 dp_folders = get_dp_folders(dataset_folder)
 responses = []
+# dp_folders = dp_folders[:1]
+# dp_folders = random.sample(dp_folders, 20)
 for i, dp_folder in tqdm(enumerate(dp_folders), total=len(dp_folders)):
 
     index = int(dp_folder.name)
@@ -93,7 +96,7 @@ for i, dp_folder in tqdm(enumerate(dp_folders), total=len(dp_folders)):
                 print(f"Waiting {wait_time} s")
                 time.sleep(wait_time)
             else:
-                print(f"Cannot parse retry time from error message. Skiping dp {index}")
+                print(f"Cannot parse retry time from error message. Skipping dp {index}")
                 print(message)
                 time.sleep(20)
                 error_counts += 1
