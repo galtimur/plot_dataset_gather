@@ -16,6 +16,7 @@ class PipelineParameters:
     output_file: Path
     openai_token: str
     instructs: dict
+    existing_ids: list
 
 
 def prepare_pipeline(config_path, out_filename):
@@ -37,7 +38,15 @@ def prepare_pipeline(config_path, out_filename):
         instructs = f.read()
         instructs = json.loads(instructs)
 
-    return PipelineParameters(dataset_folder, output_file, openai_token, instructs)
+    existing_ids = []
+    if os.path.exists(output_file):
+        with open(output_file, 'r') as file:
+            for line in file:
+                json_line = json.loads(line)
+                if 'id' in json_line:  # to ensure that the key exists
+                    existing_ids.append(json_line['id'])
+
+    return PipelineParameters(dataset_folder, output_file, openai_token, instructs, existing_ids)
 
 
 def generate_plotting_request(dp_folder: Path, instructs):
@@ -66,7 +75,8 @@ def generate_plotting_request(dp_folder: Path, instructs):
 if __name__ == "__main__":
 
     config_path = "configs/config.yaml"
-    pipline_parameters = prepare_pipeline(config_path,"gpt_plot.jsonl")
+    out_filename = "gpt_plots.jsonl"
+    pipline_parameters = prepare_pipeline(config_path, out_filename)
 
     with open(pipline_parameters.output_file, "a") as f:
         json.dump(pipline_parameters.instructs, f)
@@ -76,10 +86,14 @@ if __name__ == "__main__":
     responses = []
 
     dp_folders = get_dp_folders(pipline_parameters.dataset_folder)
-    dp_folders = random.sample(dp_folders, 2)
+    # dp_folders = random.sample(dp_folders, 2)
     for i, dp_folder in tqdm(enumerate(dp_folders), total=len(dp_folders)):
 
         index = int(dp_folder.name)
+
+        if index in pipline_parameters.existing_ids:
+            continue
+
         task = generate_plotting_request(dp_folder, pipline_parameters.instructs)
         response = gpt4v.make_request(task)
 
