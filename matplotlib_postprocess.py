@@ -1,10 +1,10 @@
 from pathlib import Path
 from omegaconf import OmegaConf
-import nbformat as nbf
 import subprocess
 from tqdm import tqdm
 
 from utils import read_jsonl
+from notebook_utils import build_new_nb
 
 def filter_prints(code: str):
 
@@ -36,18 +36,6 @@ def get_code_blocks(gpt_response: dict):
         code_blocks.append(filter_prints(block))
 
     return code_blocks
-
-def build_new_nb(blocks: list, nb_path):
-
-    '''
-    save codeblocks into notebook
-    '''
-
-    nb = nbf.v4.new_notebook()
-    nb['cells'] = [nbf.v4.new_code_cell(block) for block in blocks]
-
-    with open(nb_path, 'w') as f:
-        nbf.write(nb, f)
 
 if __name__ == "__main__":
 
