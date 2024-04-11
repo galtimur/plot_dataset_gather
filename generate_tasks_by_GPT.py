@@ -35,7 +35,7 @@ with open("prompts/task_gen.json", 'r') as f:
     instructs = f.read()
     instructs = json.loads(instructs)
 
-def generate_request(code: str, df_summary: str):
+def generate_task_request(code: str, df_summary: str):
 
     code_text = f"CODE:\n{code}"
     df_text = f"Dataframe SUMMARY:\n{df_summary}"
@@ -72,31 +72,14 @@ for i, dp_folder in tqdm(enumerate(dp_folders), total=len(dp_folders)):
     with open(df_sum_file, "r") as f:
         df_summary = f.read()
 
-    request = generate_request(code, df_summary)
-    do_request = True
+    request = generate_task_request(code, df_summary)
+    response = gpt4v.make_request(request=request, image_paths=plot_files, image_detail="low")
 
-    error_counts = 0
-    while do_request and error_counts<10:
-        response = gpt4v.ask(request=request, image_paths=plot_files, image_detail="low")
-
-        if "error" not in response.keys():
-
-            response["id"] = index
-            responses.append(response)
-
-            with open(output_file, "a") as f:
-                json.dump(response, f)
-                f.write("\n")
-            do_request = False
-        else:
-            message = response["error"]["message"]
-            seconds_to_wait = re.search(r'Please try again in (\d+)s\.', message)
-            if seconds_to_wait is not None:
-                wait_time = 1.5*int(seconds_to_wait.group(1))
-                print(f"Waiting {wait_time} s")
-                time.sleep(wait_time)
-            else:
-                print(f"Cannot parse retry time from error message. Skipping dp {index}")
-                print(message)
-                time.sleep(20)
-                error_counts += 1
+    if response is None:
+        print(f"Skipping dp {index}")
+    else:
+        response["id"] = index
+        responses.append(response)
+        with open(output_file, "a") as f:
+            json.dump(response, f)
+            f.write("\n")
