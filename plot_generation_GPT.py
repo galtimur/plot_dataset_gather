@@ -2,10 +2,7 @@ from omegaconf import OmegaConf
 from pathlib import Path
 from tqdm import tqdm
 import json
-import glob
 import os
-import time
-import re
 import random
 from dataclasses import dataclass
 
@@ -29,7 +26,7 @@ def prepare_pipeline(config_path, out_filename):
     openai_token_file = config.openai_token_file
     dataset_folder = Path(config.dataset_final)
     out_folder = Path(config.out_folder)
-    output_file = out_folder / pipline_parameters.instructs
+    output_file = out_folder / out_filename
 
     os.makedirs(out_folder, exist_ok=True)
 
@@ -41,7 +38,6 @@ def prepare_pipeline(config_path, out_filename):
         instructs = json.loads(instructs)
 
     return PipelineParameters(dataset_folder, output_file, openai_token, instructs)
-
 
 
 def generate_plotting_request(dp_folder: Path, instructs):
@@ -57,9 +53,9 @@ def generate_plotting_request(dp_folder: Path, instructs):
     with open(df_descr_file, 'r') as f:
         df_descr = f.read()
 
-    task = ""
-    for i, (task_type, task_part) in enumerate(task_dict.items()):
-        task += f"{i}.task_part\n"
+    task = instructs["plot instruct"]
+    for i, (task_type, task_part) in enumerate(task_dict.items(), start=1):
+        task += f"{i}.{task_part}\n"
         if task_type == "data description":
             task += instructs["data instruct"] + df_descr + "\n"
 
@@ -72,12 +68,15 @@ if __name__ == "__main__":
     config_path = "configs/config.yaml"
     pipline_parameters = prepare_pipeline(config_path,"gpt_plot.jsonl")
 
+    with open(pipline_parameters.output_file, "a") as f:
+        json.dump(pipline_parameters.instructs, f)
+        f.write("\n")
+
     gpt4v = GPT4V(api_key=pipline_parameters.openai_token, system_prompt=pipline_parameters.instructs["system prompt"])
     responses = []
 
     dp_folders = get_dp_folders(pipline_parameters.dataset_folder)
-    # dp_folders = dp_folders[:1]
-    # dp_folders = random.sample(dp_folders, 20)
+    dp_folders = random.sample(dp_folders, 2)
     for i, dp_folder in tqdm(enumerate(dp_folders), total=len(dp_folders)):
 
         index = int(dp_folder.name)
@@ -89,6 +88,7 @@ if __name__ == "__main__":
             continue
 
         response["id"] = index
+        response["task"] = task
         responses.append(response)
 
         with open(pipline_parameters.output_file, "a") as f:
