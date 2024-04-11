@@ -8,18 +8,12 @@ import random
 
 from utils import get_dp_folders
 from GPT4V_backbone import GPT4V
+from LLM_utils import generate_task_request, prepare_pipeline
 
-def generate_task_request(code: str, df_summary: str, instructs: dict):
-
-    code_text = f"CODE:\n{code}"
-    df_text = f"Dataframe SUMMARY:\n{df_summary}"
-
-    request = [instructs["part 1"], code_text, df_text, instructs["part 2"]]
-    request = "\n".join(request)
-
-    return request
 
 if __name__ == "__main__":
+
+    # TODO use prepare_pipeline function instead
 
     random.seed(42)
 
@@ -65,6 +59,7 @@ if __name__ == "__main__":
         code_file = dp_folder / "plot.py"
         df_sum_file = dp_folder / "data_descr.txt"
         plot_files = glob.glob(os.path.join(str(dp_folder), "*.png"))
+        plot_files = [Path(file) for file in plot_files]
 
         with open(code_file, "r") as f:
             code = f.read()
@@ -73,7 +68,7 @@ if __name__ == "__main__":
             df_summary = f.read()
 
         request = generate_task_request(code, df_summary, instructs)
-        response = gpt4v.make_request(request=request, image_paths=plot_files, image_detail="low")
+        response = gpt4v.make_request(request=request, images=plot_files, image_detail="low")
 
         if response is None:
             print(f"Skipping dp {index}")

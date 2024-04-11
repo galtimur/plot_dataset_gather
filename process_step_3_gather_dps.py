@@ -4,10 +4,10 @@ import glob
 from omegaconf import OmegaConf
 from tqdm import tqdm
 import shutil
-import re
 import json
 
-from utils import read_task_responses, read_nb_data_cell
+from LLM_utils import read_task_responses
+from utils import read_nb_data_cell
 
 '''
 Gather datapoints

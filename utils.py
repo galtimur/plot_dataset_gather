@@ -53,21 +53,6 @@ def get_pycharm_dataframe_description(df: pd.DataFrame) -> str:
         descr_lines.append(descr)
     return '\n'.join(descr_lines)
 
-def read_task_responses(response_file):
-    response_dict = {}
-    with open(response_file, 'r') as file:
-        for line in file:
-            entry = json.loads(line)
-            entry_id = entry.get('id')
-            if entry_id is not None:
-                message = entry['choices'][0]['message']['content']
-                if message:
-                    if message.startswith("TASK:"):
-                        message = message[5:].lstrip('\n ').replace("**", "")
-                    response_dict[entry_id] = message
-
-    return response_dict
-
 def read_nb_data_cell(nb_path):
 
     with open(nb_path) as f:

@@ -1,15 +1,11 @@
-import shutil
 from pathlib import Path
-import os
 import nbformat as nbf
-import glob
 import json
 import re
 from omegaconf import OmegaConf
-from tqdm import tqdm
 import subprocess
 
-from utils import read_task_responses
+from LLM_utils import read_task_responses
 from notebook_utils import build_new_nb
 
 '''
@@ -18,17 +14,27 @@ from notebook_utils import build_new_nb
 
 def gather_code(answer):
 
+    '''
+    Gather all python code blocks in a response to a single code
+    '''
+
     pattern = r'```python\n(.*?)\n```'
     code_blocks = re.findall(pattern, answer, re.DOTALL)
 
     return '\n'.join(code_blocks)
 
-def build_plots(response_path, out_folder, dataset_folder):
+def build_plots(response_path: Path, out_folder: Path, dataset_folder: Path):
+
+    '''
+    For each datapoint response runs all the code from it and build plots from it.
+    This is done in a single notebook.
+    '''
 
     response = read_task_responses(response_path)
     dp_ids = sorted(list(response.keys()))
 
     plot_cells = []
+    generated_code_dict = {}
     for idx in dp_ids:
 
         data_file = dataset_folder / str(idx) / "data.csv"
@@ -40,6 +46,7 @@ def build_plots(response_path, out_folder, dataset_folder):
 
         generated_code = gather_code(response[idx])
         plot_code_nb = "\n".join([f"# id = {idx}", data_load_code, generated_code, "%reset -f"])
+        generated_code_dict[idx] = generated_code
 
         plot_cells.append(plot_code_nb)
 
@@ -48,9 +55,13 @@ def build_plots(response_path, out_folder, dataset_folder):
     cmd = f'jupyter nbconvert --execute --allow-errors --to notebook --inplace "{plots_nb_path}"'
     subprocess.call(cmd, shell=True)
 
-    return plots_nb_path
+    return plots_nb_path, generated_code_dict
 
-def parse_plots_notebook(notebook_path):
+def parse_plots_notebook(notebook_path: Path, generated_code_dict: dict):
+
+    '''
+    Parses notebook with plotted plots and gathers the results to a json
+    '''
 
     with open(notebook_path) as f:
         nb = nbf.read(f, as_version=4)
@@ -66,17 +77,18 @@ def parse_plots_notebook(notebook_path):
             # Here we extract this index
             code = cell['source'].lstrip("\n")
             idx = int(code.split("\n")[0].lstrip("# id = "))
-            cell_res = {"error": "", "image": ""}
+            cell_res = {"error": ""}
 
             for output in cell["outputs"]:
                 if output.output_type == "error":
                     cell_res["error"] = output.ename + ": " + output.evalue
                 elif output.output_type == "display_data" and "image/png" in output.data:
                     image = output.data["image/png"]
-                    images.append({img_num: image})
+                    images.append(image)
                     img_num += 1
 
-            cell_res["image"] = images
+            cell_res["images"] = images
+            cell_res["code"] = generated_code_dict[idx]
             results[idx] = cell_res
 
     return results
@@ -87,11 +99,12 @@ def parse_llm_plot_results(config_path):
     dataset_folder = Path(config.dataset_final)
     out_folder = Path(config.out_folder)
     response_path = out_folder / "gpt_plots_responses.jsonl"
-    results_path = out_folder / "gpt_plots_results.jsonl"
+    results_path = out_folder / "gpt_plots_results.json"
 
     print("Building plots ...")
-    plots_nb_path = build_plots(response_path, out_folder, dataset_folder)
-    results = parse_plots_notebook(plots_nb_path)
+    plots_nb_path, generated_code_dict = build_plots(response_path, out_folder, dataset_folder)
+    # plots_nb_path = out_folder / "all_plots.ipynb"
+    results = parse_plots_notebook(plots_nb_path, generated_code_dict)
 
     with open(results_path, "w") as f:
         json.dump(results, f)
@@ -104,5 +117,3 @@ if __name__ == "__main__":
     parse_llm_plot_results(config_path)
 
 pass
-# plot_files = glob.glob(os.path.join(str(dp_folder), "*.png"))
-# plot_file = plot_files[0]

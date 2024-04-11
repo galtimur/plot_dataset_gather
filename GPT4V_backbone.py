@@ -32,17 +32,26 @@ class GPT4V:
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')
 
-    def encode_images(self, image_paths: List[str|Path]):
+    def encode_images(self, images: List[str|Path]):
 
+        # Important!
+        # If you pass not Path object, but string, it will be read as encoded image
         encoded_images = []
-        for image_path in image_paths:
-            encoded_images.append(self.encode_image(image_path))
+        for image in images:
+            if isinstance(image, Path):
+                image_encoded = self.encode_image(image)
+            else:
+                if "/" in image[:10]:
+                    print(f"Note, you passed string object for the image. It would be considered as encoded image, not path!\nFirst 10 symbols of the image: {image[:10]}")
+                image_encoded = image
+
+            encoded_images.append(image_encoded)
 
         return encoded_images
 
-    def ask(self, request: str, image_paths: List[str|Path] = [], image_detail: str = "auto"):
+    def ask(self, request: str, images: List[str|Path] = [], image_detail: str = "auto"):
 
-        encoded_images = self.encode_images(image_paths)
+        encoded_images = self.encode_images(images)
 
         messages = [{"role": "system", "content": [{"type": "text", "text": self.system_prompt}]}]
         content = [{"type": "text", "text": request}]
@@ -60,10 +69,10 @@ class GPT4V:
         response = requests.post(self.model_url, headers=self.headers, json=payload)
 
         return response.json()
-    def make_request(self, request, image_paths: List[str|Path] = [], image_detail: str = "auto"):
+    def make_request(self, request, images: List[str|Path] = [], image_detail: str = "auto"):
         error_counts = 0
         while error_counts<self.attempts:
-            response = self.ask(request=request, image_paths=image_paths, image_detail=image_detail)
+            response = self.ask(request=request, images=images, image_detail=image_detail)
 
             if "error" not in response.keys():
                 break

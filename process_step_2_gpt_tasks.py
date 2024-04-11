@@ -5,7 +5,7 @@ import os
 import glob
 from omegaconf import OmegaConf
 
-from utils import read_task_responses
+from LLM_utils import read_task_responses
 
 '''
 Just a script to generate a docx file to dump generated tasks and plots to verify them.
