@@ -33,12 +33,6 @@ def format_task(message):
     parts.append(part)
     parts.pop(0)
 
-    # if len(parts) != 4:
-    #     print(f"task parsing is wrong. Saved to {parse_errs_file}")
-    #     with open(parse_errs_file, "a") as f:
-    #         f.write(message)
-    #     return None
-
     task_dict = {"setup": parts[0],
                  "data description": parts[1],
                  "plot description": parts[2],
@@ -46,43 +40,46 @@ def format_task(message):
 
     return task_dict
 
-config_path = "configs/config.yaml"
-config = OmegaConf.load(config_path)
-openai_token_file = config.openai_token_file
+if __name__ == "__main__":
 
-dataset_folder = Path(config.dataset_valid_step_1)
-dataset_folder_final = Path(config.dataset_final)
-response_path = dataset_folder / "gpt_tasks.jsonl"
-os.makedirs(dataset_folder_final, exist_ok=True)
+    config_path = "configs/config.yaml"
+    config = OmegaConf.load(config_path)
+    openai_token_file = config.openai_token_file
 
-response = read_task_responses(response_path)
-dp_ids = sorted(list(response.keys()))
+    dataset_folder = Path(config.dataset_valid_step_1)
+    output_folder = Path(config.out_folder)
+    dataset_folder_final = Path(config.dataset_final)
+    response_path = output_folder / "gpt_tasks.jsonl"
+    os.makedirs(dataset_folder_final, exist_ok=True)
 
-files_list = ["plot.py", "data_descr.txt", "data.csv", "plot_original.py"]
+    response = read_task_responses(response_path)
+    dp_ids = sorted(list(response.keys()))
 
-for idx in tqdm(dp_ids):
+    files_list = ["plot.py", "data_descr.txt", "data.csv", "plot_original.py"]
 
-    task_dict = format_task(response[idx])
-    dp_folder = dataset_folder / str(idx)
-    dp_folder_final = dataset_folder_final / str(idx)
-    os.makedirs(dp_folder_final, exist_ok=True)
+    for idx in tqdm(dp_ids):
 
-    dp_files = glob.glob(os.path.join(str(dp_folder), "*.png"))
-    dp_files = [Path(file) for file in dp_files]
+        task_dict = format_task(response[idx])
+        dp_folder = dataset_folder / str(idx)
+        dp_folder_final = dataset_folder_final / str(idx)
+        os.makedirs(dp_folder_final, exist_ok=True)
 
-    for file in files_list:
-        plot_code_file = dp_folder / file
-        dp_files.append(plot_code_file)
+        dp_files = glob.glob(os.path.join(str(dp_folder), "*.png"))
+        dp_files = [Path(file) for file in dp_files]
 
-    data_code = read_nb_data_cell(dp_folder / "split_data_cut.ipynb")
-    data_code_file = dp_folder_final / "data_load.py"
-    task_file = dp_folder_final / "task.json"
+        for file in files_list:
+            plot_code_file = dp_folder / file
+            dp_files.append(plot_code_file)
 
-    with open(data_code_file, "w") as f:
-        f.write(data_code)
+        data_code = read_nb_data_cell(dp_folder / "split_data_cut.ipynb")
+        data_code_file = dp_folder_final / "data_load.py"
+        task_file = dp_folder_final / "task.json"
 
-    with open(task_file, 'w') as f:
-        json.dump(task_dict, f)
+        with open(data_code_file, "w") as f:
+            f.write(data_code)
 
-    for file in dp_files:
-        shutil.copy2(file, dp_folder_final / file.name)
+        with open(task_file, 'w') as f:
+            json.dump(task_dict, f)
+
+        for file in dp_files:
+            shutil.copy2(file, dp_folder_final / file.name)

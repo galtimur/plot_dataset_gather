@@ -1,4 +1,3 @@
-from omegaconf import OmegaConf
 from pathlib import Path
 from tqdm import tqdm
 import json
@@ -18,12 +17,13 @@ if __name__ == "__main__":
     config_path = "configs/config.yaml"
     out_filename = "gpt_tasks.jsonl"
     pipline_parameters = prepare_pipeline(config_path, out_filename, "prompts/task_gen.json")
+    pipline_parameters.dataset_folder = pipline_parameters.config.dataset_valid_step_1
 
     gpt4v = GPT4V(api_key=pipline_parameters.openai_token, system_prompt=pipline_parameters.instructs["system prompt"])
 
     dp_folders = get_dp_folders(pipline_parameters.dataset_folder)
     responses = []
-    # dp_folders = dp_folders[:1]
+    # dp_folders = dp_folders[:2]
     # dp_folders = random.sample(dp_folders, 20)
     for i, dp_folder in tqdm(enumerate(dp_folders), total=len(dp_folders)):
 

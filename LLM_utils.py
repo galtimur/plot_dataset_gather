@@ -1,7 +1,7 @@
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 import os
 import json
 import glob
@@ -9,6 +9,7 @@ import glob
 @dataclass
 class PipelineParameters:
 
+    config: DictConfig
     dataset_folder: Path
     output_file: Path
     out_folder: Path
@@ -48,7 +49,7 @@ def prepare_pipeline(config_path, out_filename, prompt_file_path):
         json.dump(instructs, f)
         f.write("\n")
 
-    return PipelineParameters(dataset_folder, output_file, out_folder, openai_token, instructs, existing_ids)
+    return PipelineParameters(config, dataset_folder, output_file, out_folder, openai_token, instructs, existing_ids)
 
 def read_task_responses(response_file):
     response_dict = {}
