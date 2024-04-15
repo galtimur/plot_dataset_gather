@@ -89,7 +89,8 @@ def calc_mean_score(logprobs: List[float], scores: List[int]):
     probs = softmax(logprobs)
     score = np.dot(probs, np.array(scores))
 
-    return score
+    # multiply score by 10 to match original 100 score
+    return 10*score
 
 
 
@@ -138,10 +139,10 @@ def ammend_rnd_idx(benchmark_results, benchmark_response_file):
 if __name__ == "__main__":
     config_path = "configs/config.yaml"
     do_random = False
-    do_logbrobs = True
+    do_logbrobs = False
     results_filename = f"benchmark_results"
     out_filename = f"benchmark_responses"  # {prefix}.jsonl"
-    prompt_file_path = "prompts/benchmark.json"
+    prompt_file_path = "prompts/benchmark_v2.json"
     if do_random:
         results_filename += "_random"
         out_filename += "_random"
@@ -162,8 +163,8 @@ if __name__ == "__main__":
     with open(results_file, "r") as f:
         results_plot = json.load(f)
 
-    # responses, tokens_highlighted = score_by_GPT(results_plot, pipline_parameters, do_random, do_logbrobs)
-    tokens_highlighted = [str(i) for i in range(11)]
+    responses, tokens_highlighted = score_by_GPT(results_plot, pipline_parameters, do_random, do_logbrobs)
+    # tokens_highlighted = [str(i) for i in range(11)]
     responses = read_task_responses(pipline_parameters.output_file)
     benchmark_results = gather_scores(responses, results_plot, tokens_highlighted)
 

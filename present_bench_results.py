@@ -19,11 +19,11 @@ def decode_image(encoded_image, output_image_file):
 '''
 Just a script to generate a docx file to dump generated tasks and plots to verify them.
 '''
-do_random = True
-if do_random:
+do_random = False
+# suffix = "_probs"
+suffix = ""
+if do_random and len(suffix)==0:
     suffix = "_random"
-else:
-    suffix = ""
 
 config_path = "configs/config.yaml"
 config = OmegaConf.load(config_path)
@@ -60,7 +60,7 @@ for idx in ids:
     paragraph = doc.add_paragraph()
     paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     paragraph.add_run(f'ID = {idx}\n')
-    paragraph.add_run(f'Score = {result["score"]}\n')
+    paragraph.add_run(f'Score = {result["score"]:.0f}\n')
     if len(result["error"]) > 0 and not do_random:
         paragraph.add_run(f'Error = {result["error"]}\n')
 
