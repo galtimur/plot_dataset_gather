@@ -7,8 +7,6 @@ from GPT4V_backbone import GPT4V
 from LLM_utils import prepare_pipeline, generate_plotting_request
 
 
-
-
 if __name__ == "__main__":
 
     config_path = "configs/config.yaml"
