@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List
 import time
 import re
+import tiktoken
 
 
 config_path = "configs/config.yaml"
@@ -15,8 +16,7 @@ with open(openai_token_file, "r") as f:
     openai_token = f.read()
 
 class GPT4V:
-
-    def __init__(self, api_key: str, system_prompt: str, wait_time = 20, attempts=10):
+    def __init__(self, api_key: str, system_prompt: str, do_logprobs: bool = False, tokens_highlighted: List[str] = [], add_args: dict ={}, wait_time = 20, attempts=10):
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}"
@@ -26,6 +26,29 @@ class GPT4V:
         self.system_prompt = system_prompt
         self.wait_time = wait_time
         self.attempts = attempts
+        if do_logprobs:
+            self.construct_logit_args(tokens_highlighted)
+            self.args.update(add_args)
+        else:
+            self.args = {}
+        self.tokens_highlighted = tokens_highlighted
+
+    def construct_logit_args(self, tokens_highlighted: List[str] = [], logit_bias_value: float = 30.0):
+
+        tokenizer = tiktoken.encoding_for_model(self.model_name)
+
+        options_tok_ids = dict()
+        logit_bias = dict()
+
+        for opt in tokens_highlighted:
+            tok_ids = tokenizer.encode(opt)
+            assert len(tok_ids) == 1
+            logit_bias[tok_ids[0]] = logit_bias_value
+            options_tok_ids[opt] = tok_ids
+
+        self.args = {"max_tokens": 1, "temperature": 0.3, "n": 1, "logprobs": True, "top_logprobs": 20,
+                "logit_bias": logit_bias}
+
 
     def encode_image(self, image_path):
 
@@ -66,10 +89,12 @@ class GPT4V:
         payload = {"model": self.model_name,
                    "messages": messages}
 
+        payload.update(self.args)
+
         response = requests.post(self.model_url, headers=self.headers, json=payload)
 
         return response.json()
-    def make_request(self, request, images: List[str|Path] = [], image_detail: str = "auto"):
+    def make_request(self, request: str, images: List[str|Path] = [], image_detail: str = "auto"):
         error_counts = 0
         while error_counts<self.attempts:
             response = self.ask(request=request, images=images, image_detail=image_detail)

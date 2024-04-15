@@ -5,6 +5,7 @@ from omegaconf import OmegaConf, DictConfig
 import os
 import json
 import glob
+import tiktoken
 
 @dataclass
 class PipelineParameters:
@@ -63,6 +64,9 @@ def read_task_responses(response_file):
                     if message.startswith("TASK:"):
                         message = message[5:].lstrip('\n ').replace("**", "")
                     response_dict[entry_id] = message
+                if entry["probs"]:
+                    logprobs = entry['choices'][0]['logprobs']['content'][0]['top_logprobs']
+                    response_dict[entry_id] = {"message": message, "logprobs": logprobs}
 
     return response_dict
 
@@ -115,3 +119,20 @@ def generate_benchmark_request(dp_folder: Path, instructs: dict, result: dict):
     plots = [plot_gen, plot_file_gt]
 
     return task, plots
+
+def construct_logit_args(options, model_name="gpt-4-turbo"):
+
+    tokenizer = tiktoken.encoding_for_model(model_name)
+
+    options = [str(i) for i in list(range(0, 11))]
+
+    options_tok_ids = dict()
+    logit_bias = dict()
+
+    for opt in options:
+        tok_ids = tokenizer.encode(opt)
+        assert len(tok_ids) == 1
+        logit_bias[tok_ids[0]] = 30
+        options_tok_ids[opt] = tok_ids
+
+    args = {"max_tokens": 1, "temperature": 0.3, "n": 1, "logprobs": True, "top_logprobs": 20, "logit_bias": logit_bias}
