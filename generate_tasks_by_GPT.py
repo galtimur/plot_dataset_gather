@@ -5,7 +5,7 @@ import glob
 import os
 import random
 
-from utils import get_dp_folders
+from data import get_dp_folders
 from GPT4V_backbone import GPT4V
 from LLM_utils import generate_task_request, prepare_pipeline
 

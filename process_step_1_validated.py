@@ -11,7 +11,8 @@ import numpy as np
 import pandas as pd
 from matplotlib.patches import Circle
 
-from utils import get_dp_folders, get_pycharm_dataframe_description
+from data import get_dp_folders
+from user_api import get_pycharm_dataframe_description
 
 
 def copy_valid_dp(data_folder, source_folder, target_folder):

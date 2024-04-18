@@ -8,7 +8,7 @@ import json
 import base64
 from omegaconf import OmegaConf
 
-from utils import get_dp_folders
+from data import get_dp_folders
 
 # %%
 
