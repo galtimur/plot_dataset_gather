@@ -12,17 +12,6 @@ from notebook_utils import build_new_nb
 
 '''
 
-def gather_code(answer):
-
-    '''
-    Gather all python code blocks in a response to a single code
-    '''
-
-    pattern = r'```python\n(.*?)\n```'
-    code_blocks = re.findall(pattern, answer, re.DOTALL)
-
-    return '\n'.join(code_blocks)
-
 def build_plots(response_path: Path, out_folder: Path, dataset_folder: Path):
 
     '''
@@ -44,7 +33,7 @@ def build_plots(response_path: Path, out_folder: Path, dataset_folder: Path):
             data_load_code = f.read()
         data_load_code = data_load_code.replace("data.csv", str(data_file))
 
-        generated_code = gather_code(response[idx])
+        generated_code = response[idx]["code"] # TODO can be an error. Test
         plot_code_nb = "\n".join([f"# id = {idx}", data_load_code, generated_code, "%reset -f"])
         generated_code_dict[idx] = generated_code
 

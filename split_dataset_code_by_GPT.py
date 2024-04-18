@@ -4,7 +4,7 @@ from pathlib import Path
 from tqdm import tqdm
 import json
 
-from utils import get_dp_folders
+from data import get_dp_folders
 
 config_path = "configs/config.yaml"
 config = OmegaConf.load(config_path)

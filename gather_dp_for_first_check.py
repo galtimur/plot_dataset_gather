@@ -3,7 +3,7 @@ from pathlib import Path
 from omegaconf import OmegaConf
 import shutil
 from tqdm import tqdm
-from utils import get_dp_folders
+from data import get_dp_folders
 
 if __name__ == "__main__":
 

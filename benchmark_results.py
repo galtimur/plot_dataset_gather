@@ -9,7 +9,8 @@ from pathlib import Path
 from scipy.special import softmax
 import numpy as np
 
-from utils import get_dp_folders, read_jsonl
+from data import get_dp_folders
+from utils import read_jsonl
 from LLM_utils import prepare_pipeline, generate_benchmark_request, read_task_responses
 
 

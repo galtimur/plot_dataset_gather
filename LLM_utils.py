@@ -84,28 +84,6 @@ def generate_task_request(code: str, df_summary: str, instructs: dict):
 
     return request
 
-def generate_plotting_request(dp_folder: Path, instructs: dict):
-
-    "Request to ask model to write a code for plotting. Add dataframe description"
-
-    df_descr_file = dp_folder / "data_descr.txt"
-    task_file = dp_folder / "task.json"
-
-    with open(task_file, 'r') as f:
-        task_dict = json.load(f)
-
-    with open(df_descr_file, 'r') as f:
-        df_descr = f.read()
-
-    task = instructs["plot instruct"]
-    for i, (task_type, task_part) in enumerate(task_dict.items(), start=1):
-        task += f"{i}.{task_part}\n"
-        if task_type == "data description":
-            task += instructs["data instruct"] + df_descr + "\n"
-
-    task = task.replace("\n\n", "\n")
-
-    return task
 
 def generate_benchmark_request(dp_folder: Path, instructs: dict, result: dict):
 
