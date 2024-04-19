@@ -42,6 +42,7 @@ if __name__ == "__main__":
     responses = read_jsonl(pipline_parameters.output_file)
 
     plot_generator = VisGenerator(
+        dataset=dataset,
         output_file=pipline_parameters.output_file,
         dataset_folder=pipline_parameters.dataset_folder,
         temp_dir=".temp"

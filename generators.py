@@ -135,6 +135,7 @@ class VisGenerator:
 
     def __init__(
         self,
+        dataset: PlotDataLoader,
         output_file: str | Path,
         dataset_folder: Path | str,
         temp_dir: str | Path = ".temp",
@@ -144,6 +145,7 @@ class VisGenerator:
         self.output_file = Path(output_file)
         self.dataset_folder = Path(dataset_folder)
         os.makedirs(self.temp_dir, exist_ok=True)
+        self.dataset = dataset
 
     def build_plots(self, response_file: str | Path | None = None, responses: List[Dict] | None = None) -> Path:
 
@@ -171,19 +173,16 @@ class VisGenerator:
                 code = response["code"]
                 responses_dict[idx] = code
 
-        dp_ids = sorted(list(responses_dict.keys()))
+        dp_ids = list(responses_dict.keys())
 
         plot_cells = []
-        for idx in dp_ids:
+        for item in self.dataset:
 
-            # TODO use DataLoader instead
-            data_file = self.dataset_folder / str(idx) / "data.csv"
-            data_code_file = self.dataset_folder / str(idx) / "data_load.py"
+            idx = item.id
+            if not idx in dp_ids:
+                continue
 
-            with open(data_code_file, "r") as f:
-                data_load_code = f.read()
-            data_load_code = data_load_code.replace("data.csv", str(data_file))
-
+            data_load_code = item.code_data.replace("data.csv", str(item.dp_path / "data.csv"))
             generated_code = responses_dict[idx]
 
             # Gather a code, adding index number at the first line as comment
