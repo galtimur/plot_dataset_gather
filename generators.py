@@ -176,7 +176,7 @@ class VisGenerator:
         plot_cells = []
         for idx in dp_ids:
 
-            # TODO may be use DataLoader instead
+            # TODO use DataLoader instead
             data_file = self.dataset_folder / str(idx) / "data.csv"
             data_code_file = self.dataset_folder / str(idx) / "data_load.py"
 
