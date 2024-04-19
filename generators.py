@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from tqdm import tqdm
 import json
@@ -128,21 +129,8 @@ class VisGenerator:
     """
     Object that runs generated code to build a plot.
     # At init pass:
-    #
-    # model: the model that has method:
-    #     make_request(task: str, system_prompt: str) -> response
-    #     task: the task for the model, used as user input
-    #     system_prompt: system prompt
-    #     response: dict. {"response": response text, ... any_other_meta_info}
-    #
-    #     NOTE that we than parse response to get a code. We assume that code block is marked as following:
-    #     ```python
-    #     CODE
-    #     ```
 
     # output_file: output file to log model responses
-    # plotting_prompt: Additional plotting prompt, prepended to the plot task. See example in prompts/plot_gen.json
-    # system_prompt: system prompt for the model
     """
 
     def __init__(
@@ -152,18 +140,19 @@ class VisGenerator:
         temp_dir: str | Path = ".temp",
     ) -> None:
 
-        self.temp_dir = temp_dir
+        self.temp_dir = Path(temp_dir)
         self.output_file = Path(output_file)
         self.dataset_folder = Path(dataset_folder)
+        os.makedirs(self.temp_dir, exist_ok=True)
 
-    def build_plots(self, response_file: str | Path | None = None, responses: List[Dict] | None = None):
+    def build_plots(self, response_file: str | Path | None = None, responses: List[Dict] | None = None) -> Path:
 
         """
         Takes either response_file of list of responses.
         List of responses is prioritized
 
-        For each datapoint response runs all the code from it and build plots from it.
-        This is done in a single notebook.
+        Gather all datapoints code in a single notebook and run it.
+        So, each cell is a datapoint code with output - plot image
         """
 
         if response_file is None and responses is None:
@@ -177,15 +166,17 @@ class VisGenerator:
 
         responses_dict = dict()
         for response in responses:
-            idx = response["id"]
-            code = response["code"]
-            responses_dict[idx] = code
+            if "id" in response:
+                idx = response["id"]
+                code = response["code"]
+                responses_dict[idx] = code
 
         dp_ids = sorted(list(responses_dict.keys()))
 
         plot_cells = []
         for idx in dp_ids:
 
+            # TODO may be use DataLoader instead
             data_file = self.dataset_folder / str(idx) / "data.csv"
             data_code_file = self.dataset_folder / str(idx) / "data_load.py"
 
@@ -193,9 +184,9 @@ class VisGenerator:
                 data_load_code = f.read()
             data_load_code = data_load_code.replace("data.csv", str(data_file))
 
-            generated_code = responses_dict[idx]["code"]
+            generated_code = responses_dict[idx]
 
-            # Note gather a code, adding index number at the first line as comment
+            # Gather a code, adding index number at the first line as comment
             # and resetting all variables at the last line
             plot_code_nb = "\n".join(
                 [f"# id = {idx}", data_load_code, generated_code, "%reset -f"]
