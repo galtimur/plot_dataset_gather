@@ -51,6 +51,4 @@ if __name__ == "__main__":
         temp_dir=".temp"
     )
 
-    plot_generator.build_plots(response_file=None, responses=responses)
-
-    print(1)
+    responses = plot_generator.draw_plots(responses_file=pipline_parameters.output_file, responses=None)

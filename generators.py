@@ -8,7 +8,7 @@ import nbformat as nbf
 import subprocess
 
 from data import PlotDataLoader, PlotDataPoint
-from utils import read_jsonl
+from utils import read_jsonl, save_jsonl
 
 
 def build_new_nb(blocks: list, nb_path):
@@ -149,7 +149,7 @@ class VisGenerator:
         os.makedirs(self.temp_dir, exist_ok=True)
         self.dataset = dataset
 
-    def build_plots(self, response_file: str | Path | None = None, responses: List[Dict] | None = None) -> Path:
+    def build_plots(self, responses_file: str | Path | None = None, responses: List[Dict] | None = None) -> Path:
 
         """
         Takes either response_file of list of responses.
@@ -159,17 +159,21 @@ class VisGenerator:
         So, each cell is a datapoint code with output - plot image
         """
 
-        if response_file is None and responses is None:
+        if responses_file is None and responses is None:
             raise ValueError("Either response_file or responses must be provided.")
 
-        if response_file is not None and responses is not None:
+        if responses_file is not None and responses is not None:
             print("Both responses file and responses list provided. Responses list would be used.")
 
         if responses is None:
-            responses = read_jsonl(response_file)
+            responses = read_jsonl(responses_file)
+        if responses_file is not None:
+            self.responses_file = responses_file
+
+        self.responses = responses
 
         responses_dict = dict()
-        for response in responses:
+        for response in self.responses:
             if "id" in response:
                 idx = response["id"]
                 code = response["code"]
@@ -195,11 +199,70 @@ class VisGenerator:
 
             plot_cells.append(plot_code_nb)
 
-        plots_nb_path = self.temp_dir / "all_plots.ipynb"
+        self.plots_nb_path = self.temp_dir / "all_plots.ipynb"
 
-        build_new_nb(plot_cells, plots_nb_path)
+        build_new_nb(plot_cells, self.plots_nb_path)
         print("Running all codes to build plots")
-        cmd = f'jupyter nbconvert --execute --allow-errors --to notebook --inplace "{plots_nb_path}"'
+        cmd = f'jupyter nbconvert --execute --allow-errors --to notebook --inplace "{self.plots_nb_path}"'
         subprocess.call(cmd, shell=True)
 
-        return plots_nb_path
+        return self.plots_nb_path
+
+    def parse_plots_notebook(self, plots_nb_path: Path | None = None) -> Dict:
+
+        '''
+        Parses notebook with plotted plots and gathers the results to a json
+        '''
+
+        if plots_nb_path is None:
+            if hasattr(self, 'plots_nb_path'):
+                plots_nb_path = self.plots_nb_path
+            else:
+                raise ValueError("Either plots_nb_path argument or attribute should exist.")
+
+        with open(plots_nb_path) as f:
+            nb = nbf.read(f, as_version=4)
+
+        plot_results = dict()
+        for cell_num, cell in enumerate(nb.cells):
+            if cell.cell_type != "code":
+                continue
+
+            images = []
+            img_num = 0
+            # At the beginning of each cell I added "id = {index}".
+            # Here we extract this index
+            code = cell['source'].lstrip("\n")
+            idx = int(code.split("\n")[0].lstrip("# id = "))
+            cell_res = {"error": ""}
+
+            for output in cell["outputs"]:
+                if output.output_type == "error":
+                    cell_res["error"] = output.ename + ": " + output.evalue
+                elif output.output_type == "display_data" and "image/png" in output.data:
+                    image = output.data["image/png"]
+                    images.append(image)
+                    img_num += 1
+
+            cell_res["images"] = images
+            plot_results[idx] = cell_res
+
+        # Update responses
+        for response in self.responses:
+            if "id" in response:
+                response["plot results"] = plot_results[response["id"]]
+
+        # TODO add safe save
+        if os.path.exists(self.output_file):
+            print(f"Output file would be overwritten! {self.output_file}")
+        save_jsonl(self.responses, self.output_file)
+        print(f"Responses and plots are saved in {self.output_file}")
+
+        return self.responses
+
+    def draw_plots(self, responses_file: str | Path | None = None, responses: List[Dict] | None = None) -> Dict:
+
+        self.build_plots(responses_file, responses)
+        responses = self.parse_plots_notebook()
+
+        return responses
