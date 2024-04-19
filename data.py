@@ -1,12 +1,13 @@
-from pathlib import Path
-from typing import List
+import base64
+import glob
 import json
-from natsort import natsorted
 import os
 import random
-import glob
-import base64
 from dataclasses import dataclass
+from pathlib import Path
+from typing import List
+
+from natsort import natsorted
 
 from benchmark_utils import TaskChanger
 
@@ -30,18 +31,17 @@ class PlotDataPoint:
     task: dict
     image: str
     id: int
-    dp_path: Path # TODO is it ok, or better make it str?
+    dp_path: Path  # TODO is it ok, or better make it str?
 
 
 class PlotRawDataLoader:
 
-    '''
+    """
     Dataloader for the plot dataset.
     Reads all items from the datapoint folder (code, task, plot image)
-    '''
+    """
 
     def __init__(self, data_dir: str | Path, shuffle: bool = False) -> None:
-
         data_dir = Path(data_dir)
 
         self.data_dir = data_dir
@@ -55,7 +55,6 @@ class PlotRawDataLoader:
         return self
 
     def read_datapoint(self, dp_folder: Path) -> PlotDataPoint:
-
         idx = int(dp_folder.name)
         code_plot_file = dp_folder / "plot.py"
         code_data_file = dp_folder / "data_load.py"
@@ -63,11 +62,16 @@ class PlotRawDataLoader:
         plot_files = glob.glob(os.path.join(str(dp_folder), "*.png"))
 
         files_exist = all(
-            [os.path.exists(file) for file in [code_plot_file, code_data_file, task_file]]
+            [
+                os.path.exists(file)
+                for file in [code_plot_file, code_data_file, task_file]
+            ]
         )
 
         if not files_exist or len(plot_files) == 0:
-            raise FileNotFoundError(f"Code file not found for data point {str(dp_folder)}")
+            raise FileNotFoundError(
+                f"Code file not found for data point {str(dp_folder)}"
+            )
 
         plot_file = Path(plot_files[0])
 
@@ -86,7 +90,7 @@ class PlotRawDataLoader:
             task=task_dict,
             image=image,
             dp_path=dp_folder,
-            id=idx
+            id=idx,
         )
 
     def __next__(self):
@@ -99,13 +103,15 @@ class PlotRawDataLoader:
         return self.read_datapoint(dp_folder)
 
     def __getitem__(self, index):
-
         if isinstance(index, int):
             dp_folder = self.data_points[index]
             return self.read_datapoint(dp_folder)
         elif isinstance(index, slice):
             start, stop, step = index.indices(len(self.data_points))
-            sliced_data_points = [self.read_datapoint(self.data_points[i]) for i in range(start, stop, step)]
+            sliced_data_points = [
+                self.read_datapoint(self.data_points[i])
+                for i in range(start, stop, step)
+            ]
             return sliced_data_points
 
     def __len__(self):
@@ -113,7 +119,12 @@ class PlotRawDataLoader:
 
 
 class PlotDataLoader(PlotRawDataLoader):
-    def __init__(self, data_dir: str | Path, shuffle: bool = False, task_changer: TaskChanger = None) -> None:
+    def __init__(
+        self,
+        data_dir: str | Path,
+        shuffle: bool = False,
+        task_changer: TaskChanger | None = None,
+    ) -> None:
         super().__init__(data_dir, shuffle)
         self.task_changer = task_changer
 
@@ -124,4 +135,3 @@ class PlotDataLoader(PlotRawDataLoader):
             datapoint.task = self.task_changer.change_task(datapoint)
 
         return datapoint
-

@@ -38,9 +38,9 @@ class GPT4V:
         self.attempts = attempts
         if do_logprobs:
             self.construct_logit_args(tokens_highlighted)
-            self.args.update(add_args)
         else:
             self.args = {}
+        self.args.update(add_args)
         self.tokens_highlighted = tokens_highlighted
 
     def construct_logit_args(

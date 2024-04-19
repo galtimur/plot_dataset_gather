@@ -18,9 +18,12 @@ if __name__ == "__main__":
     )
 
     # 0. Initialize the model
+    # add_args = {"temperature": 0.3}
+    add_args = {}
     gpt4v = GPT4V(
         api_key=pipline_parameters.openai_token,
         system_prompt=pipline_parameters.instructs["system prompt"],
+        add_args = add_args
     )
 
     # 1. Get dataset

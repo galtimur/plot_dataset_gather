@@ -1,27 +1,28 @@
-import os
-from pathlib import Path
-from tqdm import tqdm
 import json
+import os
 import re
-from typing import List, Dict
-import nbformat as nbf
 import subprocess
+from pathlib import Path
+from typing import Dict, List
+
+import nbformat as nbf
+from tqdm import tqdm
 
 from data import PlotDataLoader, PlotDataPoint
 from utils import read_jsonl, save_jsonl
 
 
 def build_new_nb(blocks: list, nb_path):
-
-    '''
+    """
     save codeblocks into notebook
-    '''
+    """
 
     nb = nbf.v4.new_notebook()
-    nb['cells'] = [nbf.v4.new_code_cell(block) for block in blocks]
+    nb["cells"] = [nbf.v4.new_code_cell(block) for block in blocks]
 
-    with open(nb_path, 'w') as f:
+    with open(nb_path, "w") as f:
         nbf.write(nb, f)
+
 
 class CodePlotGenerator:
 
@@ -82,7 +83,7 @@ class CodePlotGenerator:
 
         return task
 
-    def generate_codeplot(self, datapoint: PlotDataPoint) -> str:
+    def generate_codeplot(self, datapoint: PlotDataPoint) -> str | None:
         """
         Request a model to write a plot code for given datapoint and plotting and system prompt
         Returns raw LLM response text (only message)
@@ -102,7 +103,6 @@ class CodePlotGenerator:
         return response
 
     def generate_codeplot_datapoints(self, dataset: PlotDataLoader):
-
         print("Requesting the model to write a code for plots")
         responses = []
         for item in tqdm(dataset):
@@ -143,14 +143,16 @@ class VisGenerator:
         output_file: str | Path,
         temp_dir: str | Path = ".temp",
     ) -> None:
-
         self.temp_dir = Path(temp_dir)
         self.output_file = Path(output_file)
         os.makedirs(self.temp_dir, exist_ok=True)
         self.dataset = dataset
 
-    def build_plots(self, responses_file: str | Path | None = None, responses: List[Dict] | None = None) -> Path:
-
+    def build_plots(
+        self,
+        responses_file: str | Path | None = None,
+        responses: List[Dict] | None = None,
+    ) -> Path:
         """
         Takes either response_file of list of responses.
         List of responses is prioritized
@@ -163,7 +165,9 @@ class VisGenerator:
             raise ValueError("Either response_file or responses must be provided.")
 
         if responses_file is not None and responses is not None:
-            print("Both responses file and responses list provided. Responses list would be used.")
+            print(
+                "Both responses file and responses list provided. Responses list would be used."
+            )
 
         if responses is None:
             responses = read_jsonl(responses_file)
@@ -183,12 +187,13 @@ class VisGenerator:
 
         plot_cells = []
         for item in self.dataset:
-
             idx = item.id
             if not idx in dp_ids:
                 continue
 
-            data_load_code = item.code_data.replace("data.csv", str(item.dp_path / "data.csv"))
+            data_load_code = item.code_data.replace(
+                "data.csv", str(item.dp_path / "data.csv")
+            )
             generated_code = responses_dict[idx]
 
             # Gather a code, adding index number at the first line as comment
@@ -208,17 +213,18 @@ class VisGenerator:
 
         return self.plots_nb_path
 
-    def parse_plots_notebook(self, plots_nb_path: Path | None = None) -> Dict:
-
-        '''
+    def parse_plots_notebook(self, plots_nb_path: Path | None = None) -> List[Dict]:
+        """
         Parses notebook with plotted plots and gathers the results to a json. Saves it.
-        '''
+        """
 
         if plots_nb_path is None:
-            if hasattr(self, 'plots_nb_path'):
+            if hasattr(self, "plots_nb_path"):
                 plots_nb_path = self.plots_nb_path
             else:
-                raise ValueError("Either plots_nb_path argument or attribute should exist.")
+                raise ValueError(
+                    "Either plots_nb_path argument or attribute should exist."
+                )
 
         with open(plots_nb_path) as f:
             nb = nbf.read(f, as_version=4)
@@ -232,14 +238,16 @@ class VisGenerator:
             img_num = 0
             # At the beginning of each cell I added "id = {index}".
             # Here we extract this index
-            code = cell['source'].lstrip("\n")
+            code = cell["source"].lstrip("\n")
             idx = int(code.split("\n")[0].lstrip("# id = "))
-            cell_res = {"error": ""}
+            cell_res = {"error": "", "images": []}
 
             for output in cell["outputs"]:
                 if output.output_type == "error":
                     cell_res["error"] = output.ename + ": " + output.evalue
-                elif output.output_type == "display_data" and "image/png" in output.data:
+                elif (
+                    output.output_type == "display_data" and "image/png" in output.data
+                ):
                     image = output.data["image/png"]
                     images.append(image)
                     img_num += 1
@@ -260,7 +268,11 @@ class VisGenerator:
 
         return self.responses
 
-    def draw_plots(self, responses_file: str | Path | None = None, responses: List[Dict] | None = None) -> Dict:
+    def draw_plots(
+        self,
+        responses_file: str | Path | None = None,
+        responses: List[Dict] | None = None,
+    ) -> List[Dict]:
 
         self.build_plots(responses_file, responses)
         responses = self.parse_plots_notebook()
