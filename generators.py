@@ -124,7 +124,7 @@ class CodePlotGenerator:
 
 
 class VisGenerator:
-    # TODO WIP thats just a copy of previous class
+    # TODO WIP
 
     """
     Object that runs generated code to build a plot.
