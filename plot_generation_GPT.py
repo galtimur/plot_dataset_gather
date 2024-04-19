@@ -47,7 +47,6 @@ if __name__ == "__main__":
     plot_generator = VisGenerator(
         dataset=dataset,
         output_file=pipline_parameters.output_file,
-        dataset_folder=pipline_parameters.dataset_folder,
         temp_dir=".temp"
     )
 

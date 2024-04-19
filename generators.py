@@ -126,26 +126,26 @@ class CodePlotGenerator:
 
 
 class VisGenerator:
-    # TODO WIP
 
     """
-    Object that runs generated code to build a plot.
-    # At init pass:
+    Object that runs generated code to build plots.
+    At init pass:
 
-    # output_file: output file to log model responses
+    dataset: dataset
+    output_file: output file to save results.
+    The output is ammendment of the LLM responses logs. So, you can pass same path.
+    temp_dir: dir for notebook used for plotting plots.
     """
 
     def __init__(
         self,
         dataset: PlotDataLoader,
         output_file: str | Path,
-        dataset_folder: Path | str,
         temp_dir: str | Path = ".temp",
     ) -> None:
 
         self.temp_dir = Path(temp_dir)
         self.output_file = Path(output_file)
-        self.dataset_folder = Path(dataset_folder)
         os.makedirs(self.temp_dir, exist_ok=True)
         self.dataset = dataset
 
@@ -211,7 +211,7 @@ class VisGenerator:
     def parse_plots_notebook(self, plots_nb_path: Path | None = None) -> Dict:
 
         '''
-        Parses notebook with plotted plots and gathers the results to a json
+        Parses notebook with plotted plots and gathers the results to a json. Saves it.
         '''
 
         if plots_nb_path is None:
