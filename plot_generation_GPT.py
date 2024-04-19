@@ -1,11 +1,12 @@
 import json
+from functools import partial
 
 from data import PlotDataLoader
 from benchmark_utils import TaskChanger
 from GPT4V_backbone import GPT4V
 from LLM_utils import prepare_pipeline
 from generators import CodePlotGenerator, VisGenerator
-from user_api import get_pycharm_dataframe_description
+from user_api import pycharm_like_data_prompt
 from utils import read_jsonl
 
 
@@ -21,7 +22,9 @@ if __name__ == "__main__":
         system_prompt=pipline_parameters.instructs["system prompt"],
     )
 
-    task_changer = TaskChanger(data_descr_changer = get_pycharm_dataframe_description)
+    pycharm_like_data_prompt = partial(pycharm_like_data_prompt, prompt = pipline_parameters.instructs["data instruct"])
+
+    task_changer = TaskChanger(data_descr_changer = pycharm_like_data_prompt)
     dataset = PlotDataLoader(
         pipline_parameters.dataset_folder, shuffle=False, task_changer=task_changer
     )

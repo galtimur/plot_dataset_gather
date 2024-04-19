@@ -1,5 +1,5 @@
 import pandas as pd
-def get_pycharm_dataframe_description(task_text: str, df: pd.DataFrame) -> str:
+def pycharm_dataframe_description(task_text: str, df: pd.DataFrame) -> str:
 
     # task_text is dummy
 
@@ -25,3 +25,9 @@ def get_pycharm_dataframe_description(task_text: str, df: pd.DataFrame) -> str:
             descr = descr + f', Mean: {mean}, Std. Deviation: {std}, Min: {minimum}, Max: {maximum}'
         descr_lines.append(descr)
     return '\n'.join(descr_lines)
+
+def pycharm_like_data_prompt(task_text: str, df: pd.DataFrame, prompt: str) -> str:
+
+    df_descr = pycharm_dataframe_description(task_text, df)
+
+    return prompt + "\n" + df_descr

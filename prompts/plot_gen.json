@@ -1,3 +1,3 @@
 {"system prompt": "You are a helpful programming assistant proficient in python, matplotlib and pandas dataframes.",
-"plot instruct": "Write a code to build a plot of dataframe according to following instructions. Write a code that returns plot, not just function declaration\n",
-"data instruct": "Imply that df dataframe is ALREADY GIVEN in a code, NO need to load it or construct. The metadata of the dataframe is following:\n"}
+"plot instruct": "Write a code to build a plot of dataframe according to following instructions. Write a code that returns plot, not just function declaration.\nImply that df dataframe is ALREADY GIVEN in a code, DO NOT construct it or load.",
+"data instruct": "Imply that df dataframe is ALREADY GIVEN in a code, DO NOT construct it or load. The metadata of the dataframe is following:\n"}
