@@ -54,7 +54,7 @@ class PlotRawDataLoader:
         self.current_idx = 0
         return self
 
-    def read_datapoint(self, dp_folder: Path):
+    def read_datapoint(self, dp_folder: Path) -> PlotDataPoint:
 
         idx = int(dp_folder.name)
         code_plot_file = dp_folder / "plot.py"

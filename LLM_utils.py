@@ -46,10 +46,6 @@ def prepare_pipeline(config_path, out_filename, prompt_file_path):
                 if 'id' in json_line:  # to ensure that the key exists
                     existing_ids.append(json_line['id'])
 
-    with open(output_file, 'a') as f:
-        json.dump(instructs, f)
-        f.write("\n")
-
     return PipelineParameters(config, dataset_folder, output_file, out_folder, openai_token, instructs, existing_ids)
 
 def read_task_responses(response_file):
