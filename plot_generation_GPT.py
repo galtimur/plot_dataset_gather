@@ -17,18 +17,20 @@ if __name__ == "__main__":
         config_path, out_filename, "prompts/plot_gen.json"
     )
 
+    # 0. Initialize the model
     gpt4v = GPT4V(
         api_key=pipline_parameters.openai_token,
         system_prompt=pipline_parameters.instructs["system prompt"],
     )
 
+    # 1. Get dataset
     pycharm_like_data_prompt = partial(pycharm_like_data_prompt, prompt = pipline_parameters.instructs["data instruct"])
-
     task_changer = TaskChanger(data_descr_changer = pycharm_like_data_prompt)
     dataset = PlotDataLoader(
         pipline_parameters.dataset_folder, shuffle=False, task_changer=task_changer
     )
 
+    # 2. Run code generation task
     code_generator = CodePlotGenerator(
         model=gpt4v,
         output_file=pipline_parameters.output_file,
@@ -36,14 +38,14 @@ if __name__ == "__main__":
         system_prompt=pipline_parameters.instructs["system prompt"],
     )
 
-    dataset = dataset[0:2]
+    dataset = dataset[0:2] # For dev purposes
     with open(pipline_parameters.output_file, "a") as f:
         json.dump(pipline_parameters.instructs, f)
         f.write("\n")
     responses = code_generator.generate_codeplot_datapoints(dataset)
 
-    responses = read_jsonl(pipline_parameters.output_file)
-
+    # 3. Draw plots and save them.
+    responses = read_jsonl(pipline_parameters.output_file) # For dev purposes
     plot_generator = VisGenerator(
         dataset=dataset,
         output_file=pipline_parameters.output_file,
