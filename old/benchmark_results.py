@@ -138,19 +138,19 @@ def ammend_rnd_idx(benchmark_results, benchmark_response_file):
 
 
 if __name__ == "__main__":
-    config_path = "configs/config.yaml"
+    config_path = "../configs/config.yaml"
     do_random = False
     do_logbrobs = False
     results_filename = f"benchmark_results"
     out_filename = f"benchmark_responses"  # {prefix}.jsonl"
-    prompt_file_path = "prompts/benchmark_v2.json"
+    prompt_file_path = "../prompts/benchmark_v2.json"
     if do_random:
         results_filename += "_random"
         out_filename += "_random"
     if do_logbrobs:
         results_filename += "_probs"
         out_filename += "_probs"
-        prompt_file_path = "prompts/benchmark_probs.json"
+        prompt_file_path = "../prompts/benchmark_probs.json"
 
     pipline_parameters = prepare_pipeline(
         config_path,

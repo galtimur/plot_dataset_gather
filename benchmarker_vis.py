@@ -16,14 +16,14 @@ class VisJudge:
         self,
         vis_judge_model,
         prompts_path: Path | str,
-        output_file_judge: Path | str,
-        output_file_score: Path | str,
+        output_file_bench: Path | str,
+        bench_stat_file: Path | str,
         dataset_folder: Path | str,
     ) -> None:
         self.vis_judge_model = vis_judge_model
         self.dataset_folder = Path(dataset_folder)
-        self.output_file_judge = output_file_judge
-        self.output_file_score = output_file_score
+        self.output_file_bench = output_file_bench
+        self.bench_stat_file = bench_stat_file
         with open(prompts_path, "r") as f:
             self.prompts = json.load(f)
 
@@ -37,17 +37,33 @@ class VisJudge:
 
         return plots
 
+    def parse_bench_response(self, message):
+        match = re.search(r"[FINAL SCORE]:? ?(\d+)", message)
+
+        if match:
+            return int(match.group(1))
+        else:
+            return None
+
     def score_by_GPT(self, results_plot: dict) -> List[Dict]:
-        responses = []
+        benchmark_results = []
         for result in results_plot:
             if "id" not in result:
                 continue
             idx = result["id"]
             images = result["plot results"]["images"]
 
+            bench = {
+                "id": idx,
+                "score": 0,
+                "has plot": True,
+                "error": result["plot results"]["error"],
+                "raw response": None,
+            }
             if len(images) == 0:
-                # TODO make 0 score for that
                 print(f"No image for ID {idx}")
+                bench["has plot"] = False
+                benchmark_results.append(bench)
                 continue
 
             dp_folder = self.dataset_folder / str(idx)
@@ -57,84 +73,70 @@ class VisJudge:
                 request=self.prompts["request judge"], images=plots, image_detail="auto"
             )
 
-            response["id"] = idx
+            score = self.parse_bench_response(response["response"])
 
-            responses.append(response)
-            with open(self.output_file_judge, "a") as f:
-                json.dump(response, f)
+            bench["raw response"] = response
+            bench["score"] = score
+            benchmark_results.append(bench)
+            with open(self.output_file_bench, "a") as f:
+                json.dump(bench, f)
                 f.write("\n")
 
-        return responses
+        return benchmark_results
 
-    def parse_bench_response(self, message):
-        match = re.search(r"[FINAL SCORE]:? ?(\d+)", message)
-
-        if match:
-            return int(match.group(1))
-        else:
-            return None
-
-    def calc_bench_stat(self, benchmark_results: dict) -> dict:
-        scores = np.array([entry["score"] for entry in benchmark_results.values()])
-        errors = np.array([entry["error"] for entry in benchmark_results.values()])
+    def calc_bench_stat(self, benchmark_results: List[dict]) -> dict:
+        benchmark_results = [entry for entry in benchmark_results if "id" in entry]
+        scores = np.array(
+            [
+                entry["score"]
+                for entry in benchmark_results
+                if isinstance(entry["score"], int)
+            ]
+        )
+        errors = np.array(
+            [
+                entry["error"]
+                for entry in benchmark_results
+                if isinstance(entry["score"], int)
+            ]
+        )
 
         err_num = sum(1 for error in errors if len(error) > 0)
+        num_unparsed = len(benchmark_results) - len(scores)
 
         statistics = {
-            "min score": min(scores),
-            "max score": max(scores),
+            "min score": int(min(scores)),
+            "max score": int(max(scores)),
             "mean score": np.mean(scores),
             "median score": np.median(scores),
             "num items": len(benchmark_results),
             "error number": err_num,
             "error rate": err_num / len(benchmark_results),
+            "unparsed": num_unparsed,
         }
 
         return statistics
 
     def get_benchmark_scores(
         self,
-        results_plot: dict,
-        scoring_responses: List[Dict] | None = None,
-        scoring_responses_file: str | Path | None = None,
-    ) -> Tuple[dict, dict]:
-        if scoring_responses is None and scoring_responses_file is None:
-            scoring_responses = self.score_by_GPT(results_plot)
-        elif scoring_responses is None:
-            scoring_responses = read_jsonl(scoring_responses_file)
-        elif scoring_responses is not None and scoring_responses_file is not None:
+        results_plot: dict | None = None,
+        benchmark_results: List[Dict] | None = None,
+        benchmark_results_file: str | Path | None = None,
+    ) -> Union[Tuple[List, dict], Tuple[None, None]]:
+        if benchmark_results is None and benchmark_results_file is None:
+            if results_plot is None:
+                print("Nothing to analyze is provided")
+                return None, None
+            benchmark_results = self.score_by_GPT(results_plot)
+        elif benchmark_results is None:
+            benchmark_results = read_jsonl(benchmark_results_file)
+        elif benchmark_results is not None and benchmark_results_file is not None:
             print("You passed both function path and scoring responses list")
             print("The list would be used")
 
-        scoring_responses_dict = {
-            response["id"]: response for response in scoring_responses
-        }
-
-        benchmark_results = dict()
-        for responses in results_plot:
-            if "id" not in responses:
-                continue
-            idx = responses["id"]
-
-            bench = {"score": 0, "error": responses["plot results"]["error"]}
-
-            if len(responses["plot results"]["images"]) == 0:
-                print(f"No image for ID {idx}")
-            else:
-                score = self.parse_bench_response(
-                    scoring_responses_dict[idx]["response"]
-                )
-                if score is not None:
-                    bench["score"] = score
-                else:
-                    print(f"Could not parse bench response:\nresponses[idx]")
-                    bench["score"] = "UNK"
-
-            benchmark_results[idx] = bench
-
-        with open(self.output_file_score, "w") as f:
-            json.dump(benchmark_results, f)
-
         bench_stat = self.calc_bench_stat(benchmark_results)
+
+        with open(self.bench_stat_file, "w") as f:
+            json.dump(bench_stat, f)
 
         return benchmark_results, bench_stat

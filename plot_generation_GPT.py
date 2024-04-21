@@ -13,9 +13,16 @@ from utils import read_jsonl
 if __name__ == "__main__":
     config_path = "configs/config.yaml"
     out_filename = "gpt_plots_test.jsonl"
+    bench_results_filename = "benchmark_results.jsonl"
+    bench_stat_filename = "benchmark_stat.json"
+    plot_gen_prompt_file = "prompts/plot_gen.json"
+
     pipline_parameters = prepare_pipeline(
-        config_path, out_filename, "prompts/plot_gen.json"
+        config_path, out_filename, plot_gen_prompt_file
     )
+
+    bench_results_file = pipline_parameters.out_folder / bench_results_filename
+    bench_stat_file = pipline_parameters.out_folder / bench_stat_filename
 
     generate_code = False
     draw_plots = False
@@ -70,20 +77,18 @@ if __name__ == "__main__":
     # 4. Run benchmarking.
     if run_benchmark:
         plot_responses = read_jsonl(pipline_parameters.output_file)  # For dev purposes
-        judge_file = pipline_parameters.output_file.parent / "gpt_response_judge.jsonl"
-        output_file_score = (
-            pipline_parameters.output_file.parent / "benchmark_scores.json"
-        )
         judge = VisJudge(
             vis_judge_model=gpt4v,
             prompts_path="prompts/benchmark.json",
-            output_file_judge=judge_file,
-            output_file_score=output_file_score,
+            output_file_bench=bench_results_filename,
+            bench_stat_file=bench_stat_file,
             dataset_folder=pipline_parameters.dataset_folder,
         )
-        scores, stat = judge.get_benchmark_scores(
-            results_plot=plot_responses, scoring_responses_file=judge_file
+        benchmark_results, bench_stat = judge.get_benchmark_scores(
+            results_plot=plot_responses
         )
+        # benchmark_results, bench_stat = judge.get_benchmark_scores(
+        #     benchmark_results_file=bench_results_file
+        # )
 
-        pass
-        print(1)
+        print(bench_stat)
