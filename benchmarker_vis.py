@@ -12,6 +12,12 @@ from utils import read_jsonl
 
 
 class VisJudge:
+
+    """
+    Class for running visual benchmark over the plotted plots comparing with golden truth datapoints
+    Visual benchmarking is asking model to compare two images and return a score
+    """
+
     def __init__(
         self,
         vis_judge_model,
@@ -28,7 +34,7 @@ class VisJudge:
             self.prompts = json.load(f)
 
     def generate_images_request(self, dp_folder: Path, images: List[str]) -> List:
-        "Request to ask model to write a code for plotting. Add dataframe description"
+        # Build a list of plots to compare
 
         plot_files = glob.glob(os.path.join(str(dp_folder), "*.png"))
         plot_file_gt = Path(plot_files[0])
@@ -45,7 +51,11 @@ class VisJudge:
         else:
             return None
 
-    def score_by_GPT(self, results_plot: dict) -> List[Dict]:
+    def score_by_LLM(self, results_plot: dict) -> List[Dict]:
+        """
+        Score each plotted plot by LLM comparing with baseline image
+        """
+
         benchmark_results = []
         for result in results_plot:
             if "id" not in result:
@@ -85,6 +95,10 @@ class VisJudge:
         return benchmark_results
 
     def calc_bench_stat(self, benchmark_results: List[dict]) -> dict:
+        """
+        Calculate statistics of the scores
+        """
+
         benchmark_results = [entry for entry in benchmark_results if "id" in entry]
         scores = np.array(
             [
@@ -127,7 +141,7 @@ class VisJudge:
             if results_plot is None:
                 print("Nothing to analyze is provided")
                 return None, None
-            benchmark_results = self.score_by_GPT(results_plot)
+            benchmark_results = self.score_by_LLM(results_plot)
         elif benchmark_results is None:
             benchmark_results = read_jsonl(benchmark_results_file)
         elif benchmark_results is not None and benchmark_results_file is not None:
