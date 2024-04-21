@@ -1,15 +1,17 @@
+import glob
+import json
+import os
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from omegaconf import OmegaConf, DictConfig
-import os
-import json
-import glob
+from typing import Dict
+
 import tiktoken
+from omegaconf import DictConfig, OmegaConf
+
 
 @dataclass
 class PipelineParameters:
-
     config: DictConfig
     dataset_folder: Path
     output_file: Path
@@ -20,7 +22,6 @@ class PipelineParameters:
 
 
 def prepare_pipeline(config_path, out_filename, prompt_file_path):
-
     random.seed(42)
 
     config = OmegaConf.load(config_path)
@@ -34,43 +35,54 @@ def prepare_pipeline(config_path, out_filename, prompt_file_path):
     with open(openai_token_file, "r") as f:
         openai_token = f.read()
 
-    with open(prompt_file_path, 'r') as f:
+    with open(prompt_file_path, "r") as f:
         instructs = f.read()
         instructs = json.loads(instructs)
 
     existing_ids = []
     if os.path.exists(output_file):
-        with open(output_file, 'r') as file:
+        with open(output_file, "r") as file:
             for line in file:
                 json_line = json.loads(line)
-                if 'id' in json_line:  # to ensure that the key exists
-                    existing_ids.append(json_line['id'])
+                if "id" in json_line:  # to ensure that the key exists
+                    existing_ids.append(json_line["id"])
 
-    return PipelineParameters(config, dataset_folder, output_file, out_folder, openai_token, instructs, existing_ids)
+    return PipelineParameters(
+        config,
+        dataset_folder,
+        output_file,
+        out_folder,
+        openai_token,
+        instructs,
+        existing_ids,
+    )
+
 
 def read_task_responses(response_file):
     response_dict = {}
-    with open(response_file, 'r') as file:
+    with open(response_file, "r") as file:
         for line in file:
             entry = json.loads(line)
-            entry_id = entry.get('id')
+            entry_id = entry.get("id")
             if entry_id is not None:
-                message = entry['choices'][0]['message']['content']
+                message = entry["choices"][0]["message"]["content"]
                 if message:
                     if message.startswith("TASK:"):
-                        message = message[5:].lstrip('\n ').replace("**", "")
+                        message = message[5:].lstrip("\n ").replace("**", "")
                     response_dict[entry_id] = message
                 if entry["probs"]:
-                    logprobs = entry['choices'][0]['logprobs']['content'][0]['top_logprobs']
+                    logprobs = entry["choices"][0]["logprobs"]["content"][0][
+                        "top_logprobs"
+                    ]
                     response_dict[entry_id] = {"message": message, "logprobs": logprobs}
 
     return response_dict
 
-def generate_task_request(code: str, df_summary: str, instructs: dict):
 
-    '''
+def generate_task_request(code: str, df_summary: str, instructs: Dict[str, str]) -> str:
+    """
     Build request to generate a task for the model
-    '''
+    """
 
     code_text = f"CODE:\n{code}"
     df_text = f"Dataframe SUMMARY:\n{df_summary}"
@@ -82,7 +94,6 @@ def generate_task_request(code: str, df_summary: str, instructs: dict):
 
 
 def generate_benchmark_request(dp_folder: Path, instructs: dict, result: dict):
-
     "Request to ask model to write a code for plotting. Add dataframe description"
 
     # df_descr_file = dp_folder / "data_descr.txt"
@@ -94,8 +105,8 @@ def generate_benchmark_request(dp_folder: Path, instructs: dict, result: dict):
 
     return task, plots
 
-def construct_logit_args(options, model_name="gpt-4-turbo"):
 
+def construct_logit_args(options, model_name="gpt-4-turbo"):
     tokenizer = tiktoken.encoding_for_model(model_name)
 
     options = [str(i) for i in list(range(0, 11))]
@@ -109,4 +120,11 @@ def construct_logit_args(options, model_name="gpt-4-turbo"):
         logit_bias[tok_ids[0]] = 30
         options_tok_ids[opt] = tok_ids
 
-    args = {"max_tokens": 1, "temperature": 0.3, "n": 1, "logprobs": True, "top_logprobs": 20, "logit_bias": logit_bias}
+    args = {
+        "max_tokens": 1,
+        "temperature": 0.3,
+        "n": 1,
+        "logprobs": True,
+        "top_logprobs": 20,
+        "logit_bias": logit_bias,
+    }

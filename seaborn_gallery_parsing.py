@@ -1,15 +1,19 @@
 import os
+
 import requests
 from bs4 import BeautifulSoup
-from tqdm import tqdm
 from omegaconf import OmegaConf
+from tqdm import tqdm
 
 # %%
 
+
 def match_func_image(tag):
-    return (tag.name == 'img'
-            and tag.has_attr('src')
-            and tag['src'].startswith('../_images/'))
+    return (
+        tag.name == "img"
+        and tag.has_attr("src")
+        and tag["src"].startswith("../_images/")
+    )
 
 
 def get_image(soup, out_folder):
@@ -18,8 +22,8 @@ def get_image(soup, out_folder):
     image_urls = []
 
     for i, image in enumerate(images):
-        image_url_relative = image['src']
-        image_url = 'https://seaborn.pydata.org' + image_url_relative[2:]
+        image_url_relative = image["src"]
+        image_url = "https://seaborn.pydata.org" + image_url_relative[2:]
         image_urls.append(image_url)
 
         img_response = requests.get(image_url, stream=True)
@@ -31,18 +35,18 @@ def get_image(soup, out_folder):
 
         image_path = os.path.join(out_folder, image_name)
 
-        with open(image_path, 'wb') as f:
+        with open(image_path, "wb") as f:
             f.write(img_response.content)
 
     return image_urls
 
 
 def get_code(soup, out_folder):
-    code_block = soup.find('div', class_='highlight').get_text()
+    code_block = soup.find("div", class_="highlight").get_text()
 
     code_path = os.path.join(out_folder, "plot_code.py")
 
-    with open(code_path, 'w') as f:
+    with open(code_path, "w") as f:
         f.write(code_block)
 
     return code_block
@@ -53,14 +57,14 @@ def get_gallary_links():
     gallery_url = base_url + "index.html"
 
     r = requests.get(gallery_url)
-    soup = BeautifulSoup(r.text, 'html.parser')
+    soup = BeautifulSoup(r.text, "html.parser")
 
     plot_links = []
 
-    for link in soup.find_all('a'):
-        href = link.get('href')
+    for link in soup.find_all("a"):
+        href = link.get("href")
 
-        if href is not None and href.startswith('./') and href.endswith('.html'):
+        if href is not None and href.startswith("./") and href.endswith(".html"):
             plot_url = base_url + href[2:]
             plot_links.append(plot_url)
 
@@ -69,7 +73,6 @@ def get_gallary_links():
 
 # %%
 if __name__ == "__main__":
-
     plot_links = get_gallary_links()
 
     config_path = "configs/config.yaml"
@@ -84,9 +87,8 @@ if __name__ == "__main__":
         os.makedirs(out_folder, exist_ok=True)
 
         response = requests.get(plot_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        code_block = soup.find('div', class_='highlight').get_text()
+        code_block = soup.find("div", class_="highlight").get_text()
         image_url = get_image(soup, out_folder)[0]
         get_code(soup, out_folder)
-

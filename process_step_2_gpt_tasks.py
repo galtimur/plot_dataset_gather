@@ -1,15 +1,16 @@
+import glob
+import os
+from pathlib import Path
+
 from docx import Document
 from docx.shared import Inches
-from pathlib import Path
-import os
-import glob
 from omegaconf import OmegaConf
 
 from LLM_utils import read_task_responses
 
-'''
+"""
 Just a script to generate a docx file to dump generated tasks and plots to verify them.
-'''
+"""
 
 config_path = "configs/config.yaml"
 config = OmegaConf.load(config_path)
@@ -30,13 +31,12 @@ doc = Document()
 # section.page_height = new_height
 
 for idx in dp_ids:
-
     dp_folder = dataset_folder / str(idx)
     plot_files = glob.glob(os.path.join(str(dp_folder), "*.png"))
     plot_file = plot_files[0]
 
-    table= doc.add_table(rows=1, cols=1)
-    table.style = 'Table Grid'
+    table = doc.add_table(rows=1, cols=1)
+    table.style = "Table Grid"
 
     cell = table.cell(0, 0)
     cell.text = response[idx]
@@ -50,7 +50,7 @@ for idx in dp_ids:
 
     doc.add_page_break()
 
-doc.save('out/tasks.docx')
+doc.save("out/tasks.docx")
 
 
 pass

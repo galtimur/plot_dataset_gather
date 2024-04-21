@@ -5,11 +5,9 @@ import os
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from natsort import natsorted
-
-from benchmark_utils import TaskChanger
 
 
 def get_dp_folders(folder_path: Path) -> List[Path]:
@@ -93,7 +91,7 @@ class PlotRawDataLoader:
             id=idx,
         )
 
-    def __next__(self):
+    def __next__(self) -> PlotDataPoint:
         if self.current_idx >= len(self.data_points):
             raise StopIteration
 
@@ -102,7 +100,7 @@ class PlotRawDataLoader:
 
         return self.read_datapoint(dp_folder)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> PlotDataPoint:
         if isinstance(index, int):
             dp_folder = self.data_points[index]
             return self.read_datapoint(dp_folder)
@@ -123,12 +121,13 @@ class PlotDataLoader(PlotRawDataLoader):
         self,
         data_dir: str | Path,
         shuffle: bool = False,
-        task_changer: TaskChanger | None = None,
+        # TODO how to annotate task_changer: TaskChanger without circular import?
+        task_changer=None,
     ) -> None:
         super().__init__(data_dir, shuffle)
         self.task_changer = task_changer
 
-    def read_datapoint(self, dp_folder):
+    def read_datapoint(self, dp_folder: Path) -> PlotDataPoint:
         datapoint = super().read_datapoint(dp_folder)
 
         if self.task_changer is not None:

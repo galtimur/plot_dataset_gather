@@ -1,12 +1,12 @@
-from omegaconf import OmegaConf
 import base64
-import requests
-from pathlib import Path
-from typing import List
-import time
 import re
-import tiktoken
+import time
+from pathlib import Path
+from typing import Dict, List, Union
 
+import requests
+import tiktoken
+from omegaconf import OmegaConf
 
 config_path = "configs/config.yaml"
 config = OmegaConf.load(config_path)
@@ -26,7 +26,7 @@ class GPT4V:
         add_args: dict = {},
         wait_time=20,
         attempts=10,
-    ):
+    ) -> None:
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
@@ -45,7 +45,7 @@ class GPT4V:
 
     def construct_logit_args(
         self, tokens_highlighted: List[str] = [], logit_bias_value: float = 30.0
-    ):
+    ) -> None:
         tokenizer = tiktoken.encoding_for_model(self.model_name)
 
         options_tok_ids = dict()
@@ -66,11 +66,11 @@ class GPT4V:
             "logit_bias": logit_bias,
         }
 
-    def encode_image(self, image_path):
+    def encode_image(self, image_path) -> str:
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
-    def encode_images(self, images: List[str | Path]):
+    def encode_images(self, images: List[str | Path]) -> List[str]:
         # Important!
         # If you pass not Path object, but string, it will be read as encoded image
         encoded_images = []
@@ -94,7 +94,7 @@ class GPT4V:
         system_prompt: str | None = None,
         images: List[str | Path] = [],
         image_detail: str = "auto",
-    ):
+    ) -> dict:
         if system_prompt is not None:
             self.system_prompt = system_prompt
 
@@ -133,7 +133,7 @@ class GPT4V:
         system_prompt: str | None = None,
         images: List[str | Path] = [],
         image_detail: str = "auto",
-    ):
+    ) -> Union[Dict, None]:
         error_counts = 0
         while error_counts < self.attempts:
             response = self.ask(

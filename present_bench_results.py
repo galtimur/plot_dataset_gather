@@ -1,12 +1,13 @@
-from docx import Document
-from docx.shared import Inches
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-import json
-from pathlib import Path
-import os
-import glob
-from omegaconf import OmegaConf
 import base64
+import glob
+import json
+import os
+from pathlib import Path
+
+from docx import Document
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.shared import Inches
+from omegaconf import OmegaConf
 
 
 def decode_image(encoded_image, output_image_file):
@@ -16,13 +17,14 @@ def decode_image(encoded_image, output_image_file):
     with open(output_image_file, "wb") as image_file:
         image_file.write(decoded_image)
 
-'''
+
+"""
 Just a script to generate a docx file to dump generated tasks and plots to verify them.
-'''
+"""
 do_random = False
 # suffix = "_probs"
 suffix = ""
-if do_random and len(suffix)==0:
+if do_random and len(suffix) == 0:
     suffix = "_random"
 
 config_path = "configs/config.yaml"
@@ -35,10 +37,10 @@ os.makedirs(temp_folder, exist_ok=True)
 results_file = results_folder / f"benchmark_results{suffix}.json"
 response_file = results_folder / "gpt_plots_results.json"
 
-with open(results_file, 'r') as f:
+with open(results_file, "r") as f:
     results = json.load(f)
 
-with open(response_file, 'r') as f:
+with open(response_file, "r") as f:
     plot_responses = json.load(f)
 
 temp_image_file = temp_folder / "plot.png"
@@ -53,13 +55,12 @@ section.page_width = new_width
 section.page_height = new_height
 
 for idx in ids:
-
     response = plot_responses[idx]
     result = results[idx]
 
     paragraph = doc.add_paragraph()
     paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-    paragraph.add_run(f'ID = {idx}\n')
+    paragraph.add_run(f"ID = {idx}\n")
     paragraph.add_run(f'Score = {result["score"]:.0f}\n')
     if len(result["error"]) > 0 and not do_random:
         paragraph.add_run(f'Error = {result["error"]}\n')
@@ -73,16 +74,18 @@ for idx in ids:
             rnd_idx = idx
 
         dp_folder = dataset_folder / str(rnd_idx)
-        paragraph.add_run(f'RANDOM PAIR\n')
+        paragraph.add_run(f"RANDOM PAIR\n")
 
     plot_files = glob.glob(os.path.join(str(dp_folder), "*.png"))
     plot_file = plot_files[0]
 
-    if len(plot_files)>1 and not do_random:
-        paragraph.add_run(f'There should be {len(plot_files)} images in GT, used only one\n')
+    if len(plot_files) > 1 and not do_random:
+        paragraph.add_run(
+            f"There should be {len(plot_files)} images in GT, used only one\n"
+        )
 
-    table= doc.add_table(rows=1, cols=2)
-    table.style = 'Table Grid'
+    table = doc.add_table(rows=1, cols=2)
+    table.style = "Table Grid"
 
     cell = table.cell(0, 0)
     cell.text = "Generated"
@@ -102,4 +105,4 @@ for idx in ids:
 
     doc.add_page_break()
 
-doc.save(Path(config.out_folder) / f'bench_results{suffix}.docx')
+doc.save(Path(config.out_folder) / f"bench_results{suffix}.docx")

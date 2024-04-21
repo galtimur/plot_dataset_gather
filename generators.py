@@ -273,7 +273,6 @@ class VisGenerator:
         responses_file: str | Path | None = None,
         responses: List[Dict] | None = None,
     ) -> List[Dict]:
-
         self.build_plots(responses_file, responses)
         responses = self.parse_plots_notebook()
 

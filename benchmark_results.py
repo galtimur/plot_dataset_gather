@@ -1,17 +1,17 @@
+import json
+import random
+import re
+from pathlib import Path
 from typing import List
 
-from tqdm import tqdm
-import json
-from GPT4V_backbone import GPT4V
-import re
-import random
-from pathlib import Path
-from scipy.special import softmax
 import numpy as np
+from scipy.special import softmax
+from tqdm import tqdm
 
 from data import get_dp_folders
+from GPT4V_backbone import GPT4V
+from LLM_utils import generate_benchmark_request, prepare_pipeline, read_task_responses
 from utils import read_jsonl
-from LLM_utils import prepare_pipeline, generate_benchmark_request, read_task_responses
 
 
 def get_random_dp_folder(dataset_folder, target_idx):
@@ -85,14 +85,13 @@ def parse_bench_response_text(message):
     else:
         return None
 
-def calc_mean_score(logprobs: List[float], scores: List[int]):
 
+def calc_mean_score(logprobs: List[float], scores: List[int]):
     probs = softmax(logprobs)
     score = np.dot(probs, np.array(scores))
 
     # multiply score by 10 to match original 100 score
-    return 10*score
-
+    return 10 * score
 
 
 def parse_bench_response_logprobs(logprobs, tokens_highlighted):
@@ -100,9 +99,9 @@ def parse_bench_response_logprobs(logprobs, tokens_highlighted):
     probs = []
     scores = []
     for entry in logprobs:
-        if entry['token'] in tokens_highlighted:
-            probs.append(entry['logprob'])
-            scores.append(int(entry['token']))
+        if entry["token"] in tokens_highlighted:
+            probs.append(entry["logprob"])
+            scores.append(int(entry["token"]))
     score = calc_mean_score(probs, scores)
 
     return score
@@ -128,6 +127,7 @@ def gather_scores(responses, results_plot, tokens_highlighted):
 
     return benchmark_results
 
+
 def ammend_rnd_idx(benchmark_results, benchmark_response_file):
     benchmark_response = read_jsonl(benchmark_response_file)
     for response in benchmark_response:
@@ -152,7 +152,6 @@ if __name__ == "__main__":
         out_filename += "_probs"
         prompt_file_path = "prompts/benchmark_probs.json"
 
-
     pipline_parameters = prepare_pipeline(
         config_path,
         out_filename=f"{out_filename}.jsonl",
@@ -164,7 +163,9 @@ if __name__ == "__main__":
     with open(results_file, "r") as f:
         results_plot = json.load(f)
 
-    responses, tokens_highlighted = score_by_GPT(results_plot, pipline_parameters, do_random, do_logbrobs)
+    responses, tokens_highlighted = score_by_GPT(
+        results_plot, pipline_parameters, do_random, do_logbrobs
+    )
     # tokens_highlighted = [str(i) for i in range(11)]
     responses = read_task_responses(pipline_parameters.output_file)
     benchmark_results = gather_scores(responses, results_plot, tokens_highlighted)

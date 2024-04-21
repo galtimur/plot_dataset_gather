@@ -1,32 +1,35 @@
-from pathlib import Path
-from tqdm import tqdm
-import json
 import glob
+import json
 import os
 import random
+from pathlib import Path
+
+from tqdm import tqdm
 
 from data import get_dp_folders
 from GPT4V_backbone import GPT4V
 from LLM_utils import generate_task_request, prepare_pipeline
 
-
 if __name__ == "__main__":
-
     # TODO use prepare_pipeline function instead
 
     config_path = "configs/config.yaml"
     out_filename = "gpt_tasks.jsonl"
-    pipline_parameters = prepare_pipeline(config_path, out_filename, "prompts/task_gen.json")
+    pipline_parameters = prepare_pipeline(
+        config_path, out_filename, "prompts/task_gen.json"
+    )
     pipline_parameters.dataset_folder = pipline_parameters.config.dataset_valid_step_1
 
-    gpt4v = GPT4V(api_key=pipline_parameters.openai_token, system_prompt=pipline_parameters.instructs["system prompt"])
+    gpt4v = GPT4V(
+        api_key=pipline_parameters.openai_token,
+        system_prompt=pipline_parameters.instructs["system prompt"],
+    )
 
     dp_folders = get_dp_folders(pipline_parameters.dataset_folder)
     responses = []
     # dp_folders = dp_folders[:2]
     # dp_folders = random.sample(dp_folders, 20)
     for i, dp_folder in tqdm(enumerate(dp_folders), total=len(dp_folders)):
-
         index = int(dp_folder.name)
         if index in pipline_parameters.existing_ids:
             continue
@@ -43,7 +46,9 @@ if __name__ == "__main__":
             df_summary = f.read()
 
         request = generate_task_request(code, df_summary, pipline_parameters.instructs)
-        response = gpt4v.make_request(request=request, images=plot_files, image_detail="low")
+        response = gpt4v.make_request(
+            request=request, images=plot_files, image_detail="low"
+        )
 
         if response is None:
             print(f"Skipping dp {index}")

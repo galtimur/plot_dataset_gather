@@ -1,10 +1,11 @@
-from openai_backbone import OpenAIBackbone, ChatMessage
-from omegaconf import OmegaConf
-from pathlib import Path
-from tqdm import tqdm
 import json
+from pathlib import Path
+
+from omegaconf import OmegaConf
+from tqdm import tqdm
 
 from data import get_dp_folders
+from openai_backbone import ChatMessage, OpenAIBackbone
 
 config_path = "configs/config.yaml"
 config = OmegaConf.load(config_path)
@@ -31,7 +32,6 @@ with open(output_file, "a") as f:
 dp_folders = get_dp_folders(dataset_folder)
 responses = []
 for i, dp_folder in tqdm(enumerate(dp_folders), total=len(dp_folders)):
-
     index = int(dp_folder.name)
     code_file = dp_folder / "plot.py"
     with open(code_file, "r") as f:

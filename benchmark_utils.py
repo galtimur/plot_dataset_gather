@@ -1,8 +1,7 @@
-from typing import Callable, Dict
+from typing import TYPE_CHECKING, Callable, Dict
 
 import pandas as pd
 
-from data import PlotDataPoint
 
 class TaskChanger:
 
@@ -25,8 +24,8 @@ class TaskChanger:
         self.data_descr_changer = data_descr_changer
         self.style_changer = style_changer
 
-    def change_task(self, datapoint: PlotDataPoint) -> Dict:
-
+    # TODO how to annotate datapoint: PlotDataPoint without circular import?
+    def change_task(self, datapoint) -> Dict:
         task = datapoint.task
         df = pd.read_csv(datapoint.dp_path / "data.csv")
 

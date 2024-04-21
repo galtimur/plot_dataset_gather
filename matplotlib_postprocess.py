@@ -1,16 +1,17 @@
-from pathlib import Path
-from omegaconf import OmegaConf
 import subprocess
+from pathlib import Path
+
+from notebook_utils import build_new_nb
+from omegaconf import OmegaConf
 from tqdm import tqdm
 
 from utils import read_jsonl
-from notebook_utils import build_new_nb
+
 
 def filter_prints(code: str):
-
-    '''
+    """
     remove lines with prints
-    '''
+    """
 
     lines = code.split("\n")
     lines_cleaned = [line for line in lines if not line.startswith("print(")]
@@ -18,11 +19,11 @@ def filter_prints(code: str):
 
     return code_cleaned
 
-def get_code_blocks(gpt_response: dict):
 
-    '''
+def get_code_blocks(gpt_response: dict):
+    """
     parse codeblocks (highlighted by ```) from LLM response
-    '''
+    """
 
     code_start_seq = "python\n"
     cut = len(code_start_seq)
@@ -37,8 +38,8 @@ def get_code_blocks(gpt_response: dict):
 
     return code_blocks
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     config_path = "configs/config.yaml"
     config = OmegaConf.load(config_path)
     dataset_folder = Path(config.matplotlib_dataset_path)
@@ -49,18 +50,18 @@ if __name__ == "__main__":
     for gpt_response in tqdm(code_split_results):
         idx = gpt_response["id"]
         dp_folder = dataset_folder / str(idx)
-        nb_path = dp_folder / 'split_data.ipynb'
+        nb_path = dp_folder / "split_data.ipynb"
         code_blocks = get_code_blocks(gpt_response)
 
         if len(code_blocks) >= 2:
             # we assume that the code block is first, but just in case, I formulate it is penultimate
             data_block = code_blocks[-2]
             data_block += "\ndf.to_csv('data.csv', index=False)"
-            data_block_file = dp_folder / 'data_block.py'
-            with open(data_block_file, 'w') as f:
+            data_block_file = dp_folder / "data_block.py"
+            with open(data_block_file, "w") as f:
                 f.write(data_block)
             # run data script to generate the data file
-            subprocess.run(['python', data_block_file], cwd=dp_folder)
+            subprocess.run(["python", data_block_file], cwd=dp_folder)
 
             # add printing df into notebook
             code_blocks[-2] += "\ndf.head(15)"

@@ -1,23 +1,24 @@
-from pathlib import Path
-import os
 import glob
+import json
+import os
+import shutil
+from pathlib import Path
+
 from omegaconf import OmegaConf
 from tqdm import tqdm
-import shutil
-import json
 
 from LLM_utils import read_task_responses
 from utils import read_nb_data_cell
 
-'''
+"""
 Gather datapoints
-'''
+"""
+
 
 def format_task(message):
-
-    '''
+    """
     Splits the list of items like 1. \n 2. \n ... and forms a dict
-    '''
+    """
 
     parse_errs_file = "out/parsing_errors.txt"
 
@@ -33,15 +34,17 @@ def format_task(message):
     parts.append(part)
     parts.pop(0)
 
-    task_dict = {"setup": parts[0],
-                 "data description": parts[1],
-                 "plot description": parts[2],
-                 "plot style": parts[3]}
+    task_dict = {
+        "setup": parts[0],
+        "data description": parts[1],
+        "plot description": parts[2],
+        "plot style": parts[3],
+    }
 
     return task_dict
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     config_path = "configs/config.yaml"
     config = OmegaConf.load(config_path)
     openai_token_file = config.openai_token_file
@@ -58,7 +61,6 @@ if __name__ == "__main__":
     files_list = ["plot.py", "data_descr.txt", "data.csv", "plot_original.py"]
 
     for idx in tqdm(dp_ids):
-
         task_dict = format_task(response[idx])
         dp_folder = dataset_folder / str(idx)
         dp_folder_final = dataset_folder_final / str(idx)
@@ -78,7 +80,7 @@ if __name__ == "__main__":
         with open(data_code_file, "w") as f:
             f.write(data_code)
 
-        with open(task_file, 'w') as f:
+        with open(task_file, "w") as f:
             json.dump(task_dict, f)
 
         for file in dp_files:
