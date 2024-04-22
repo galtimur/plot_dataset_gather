@@ -147,11 +147,12 @@ class VisJudge:
 
         if benchmark_results is None and benchmark_results_file is None:
             if results_plot is None and results_plot_file is None:
-                print("Nothing to analyze is provided")
-                return None, None
+                raise ValueError(
+                    "Either results_plot_file or results_plot must be provided."
+                )
             elif results_plot is not None:
                 pass
-            elif results_plot_file is not None:
+            else:
                 results_plot = read_jsonl(results_plot_file)
             if results_plot is not None and results_plot_file is not None:
                 print("You passed both function path and scoring responses list")

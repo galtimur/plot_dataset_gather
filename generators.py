@@ -9,7 +9,7 @@ import nbformat as nbf
 from tqdm import tqdm
 
 from data import PlotDataLoader, PlotDataPoint
-from utils import read_jsonl, save_jsonl
+from utils import read_jsonl, save_jsonl, read_responses
 
 
 def build_new_nb(blocks: list, nb_path):
@@ -175,20 +175,13 @@ class VisGenerator:
             )
 
         if responses is None:
-            responses = read_jsonl(responses_file)
+            responses = read_responses(responses_file)
         if responses_file is not None:
             self.responses_file = responses_file
 
         self.responses = responses
 
-        responses_dict = dict()
-        for response in self.responses:
-            if "id" in response:
-                idx = response["id"]
-                code = response["code"]
-                responses_dict[idx] = code
-
-        dp_ids = list(responses_dict.keys())
+        dp_ids = list(responses.keys())
 
         plot_cells = []
         for item in self.dataset:
@@ -199,7 +192,7 @@ class VisGenerator:
             data_load_code = item.code_data.replace(
                 "data.csv", str(item.dp_path / "data.csv")
             )
-            generated_code = responses_dict[idx]
+            generated_code = responses[idx]["code"]
 
             # Gather a code, adding index number at the first line as comment
             # and resetting all variables at the last line

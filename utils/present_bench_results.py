@@ -59,7 +59,6 @@ section.page_width = new_width
 section.page_height = new_height
 
 for idx in ids:
-
     response = plot_responses[idx]
     result = bench_scores[idx]
 

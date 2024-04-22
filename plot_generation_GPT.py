@@ -8,7 +8,6 @@ from generators import CodePlotGenerator, VisGenerator
 from GPT4V_backbone import GPT4V
 from LLM_utils import prepare_pipeline
 from user_api import pycharm_like_data_prompt
-from utils import read_jsonl
 
 if __name__ == "__main__":
     config_path = "configs/config.yaml"
@@ -29,8 +28,8 @@ if __name__ == "__main__":
     bench_stat_file = pipline_parameters.out_folder / bench_stat_filename
 
     generate_code = False
-    draw_plots = False
-    run_benchmark = True
+    draw_plots = True
+    run_benchmark = False
 
     # 0. Initialize the model
     # add_args = {"temperature": 0.3}
@@ -83,7 +82,6 @@ if __name__ == "__main__":
 
     # 3. Draw plots and save them.
     if draw_plots:
-        responses = read_jsonl(pipline_parameters.output_file)  # For dev purposes
         plot_generator = VisGenerator(
             dataset=dataset,
             output_file=pipline_parameters.output_file,
@@ -91,7 +89,7 @@ if __name__ == "__main__":
         )
 
         responses = plot_generator.draw_plots(
-            responses_file=pipline_parameters.output_file, responses=None
+            responses_file=pipline_parameters.output_file
         )
 
     # 4. Run benchmarking.

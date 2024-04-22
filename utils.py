@@ -28,7 +28,7 @@ def read_nb_data_cell(nb_path: str | Path):
     return data_code
 
 
-def read_responses(file_path: str | Path) -> dict:
+def read_responses(file_path: str | Path, responses: List[Dict] | None = None) -> dict:
     responses = read_jsonl(file_path)
 
     responses_dict = dict()
