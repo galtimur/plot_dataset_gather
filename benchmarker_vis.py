@@ -144,6 +144,7 @@ class VisJudge:
         benchmark_results: List[Dict] | None = None,
         benchmark_results_file: str | Path | None = None,
     ) -> Union[Tuple[List, dict], Tuple[None, None]]:
+
         if benchmark_results is None and benchmark_results_file is None:
             if results_plot is None and results_plot_file is None:
                 print("Nothing to analyze is provided")

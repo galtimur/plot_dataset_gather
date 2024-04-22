@@ -18,15 +18,16 @@ with open(openai_token_file, "r") as f:
 
 class GPT4V:
     def __init__(
-        self,
-        api_key: str,
-        system_prompt: str,
-        do_logprobs: bool = False,
-        tokens_highlighted: List[str] = [],
-        add_args: dict = {},
-        wait_time=20,
-        attempts=10,
+            self,
+            api_key: str,
+            system_prompt: str,
+            do_logprobs: bool = False,
+            tokens_highlighted: List[str] = [],
+            add_args: dict = {},
+            wait_time=20,
+            attempts=10,
     ) -> None:
+
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
@@ -40,12 +41,16 @@ class GPT4V:
             self.construct_logit_args(tokens_highlighted)
         else:
             self.args = {}
+
+        # TODO: I have concern about the model arguments - maybe it should be in config?
+        #  What if we want to experiment with temperature?
         self.args.update(add_args)
         self.tokens_highlighted = tokens_highlighted
 
     def construct_logit_args(
-        self, tokens_highlighted: List[str] = [], logit_bias_value: float = 30.0
+            self, tokens_highlighted: List[str] = [], logit_bias_value: float = 30.0
     ) -> None:
+
         tokenizer = tiktoken.encoding_for_model(self.model_name)
 
         options_tok_ids = dict()
@@ -53,9 +58,11 @@ class GPT4V:
 
         for opt in tokens_highlighted:
             tok_ids = tokenizer.encode(opt)
+            # TODO: lets instead assert we will have if + warning raise with informative message
             assert len(tok_ids) == 1
             logit_bias[tok_ids[0]] = logit_bias_value
             options_tok_ids[opt] = tok_ids
+
 
         self.args = {
             "max_tokens": 1,
@@ -66,6 +73,7 @@ class GPT4V:
             "logit_bias": logit_bias,
         }
 
+    # TODO: static?
     def encode_image(self, image_path) -> str:
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
@@ -79,6 +87,8 @@ class GPT4V:
                 image_encoded = self.encode_image(image)
             else:
                 if "/" in image[:10]:
+                    # TODO: Maybe there it will be simpler to check if
+                    #  path exists and if it is not consider string as image?
                     print(
                         f"Note, you passed string object for the image. It would be considered as encoded image, not path!\nFirst 10 symbols of the image: {image[:10]}"
                     )
@@ -89,12 +99,14 @@ class GPT4V:
         return encoded_images
 
     def ask(
-        self,
-        request: str,
-        system_prompt: str | None = None,
-        images: List[str | Path] = [],
-        image_detail: str = "auto",
+            self,
+            request: str,
+            system_prompt: str | None = None,
+            images: List[str | Path] = [],  # TODO in not sure that it should have default value
+            image_detail: str = "auto",
     ) -> dict:
+
+        # TODO: by design should it be overwriteble on the fly? Or maybe it is better always use self.system_prompt
         if system_prompt is not None:
             self.system_prompt = system_prompt
 
@@ -107,7 +119,7 @@ class GPT4V:
             }
         ]
         content = [{"type": "text", "text": request}]
-
+        # TODO: avoid empty operations
         for encoded_image in encoded_images:
             content_image = {
                 "type": "image_url",
@@ -128,12 +140,13 @@ class GPT4V:
         return response.json()
 
     def make_request(
-        self,
-        request: str,
-        system_prompt: str | None = None,
-        images: List[str | Path] = [],
-        image_detail: str = "auto",
+            self,
+            request: str,
+            system_prompt: str | None = None,
+            images: List[str | Path] = [],
+            image_detail: str = "auto",
     ) -> Union[Dict, None]:
+
         error_counts = 0
         while error_counts < self.attempts:
             response = self.ask(
@@ -155,6 +168,9 @@ class GPT4V:
                     print(f"Waiting {wait_time} s")
                     time.sleep(wait_time)
                 else:
+                    # TODO: Here will be bug because wait_time will not be defined.
+                    #  Please rewrite so we get waite time first and do wait after.
+                    #  Also error counting happening only in one branch of if-else
                     print(
                         f"Cannot parse retry time from error message. Will wait for {wait_time} seconds"
                     )
@@ -163,4 +179,5 @@ class GPT4V:
                     time.sleep(20)
                     error_counts += 1
 
+        # TODO: if we have all errors there will be no error and here wil be a bug.
         return response

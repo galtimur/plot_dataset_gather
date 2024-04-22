@@ -12,15 +12,19 @@ from utils import read_jsonl
 
 if __name__ == "__main__":
     config_path = "configs/config.yaml"
+    # TODO: all other paths should be in config, lets avoid hardcoded stuff. Also
     out_filename = "gpt_plots_dev.jsonl"
     bench_results_filename = "benchmark_results.jsonl"
     bench_stat_filename = "benchmark_stat.json"
     plot_gen_prompt_file = "prompts/plot_gen.json"
 
+    # TODO: I would have discussion here - current prepare_pipeline feels clunky, maybe we can do it better
     pipline_parameters = prepare_pipeline(
         config_path, out_filename, plot_gen_prompt_file
     )
 
+    # TODO: all of this paths could be available directly in the config --
+    #  im not sure that we need to construct them explicitly
     bench_results_file = pipline_parameters.out_folder / bench_results_filename
     bench_stat_file = pipline_parameters.out_folder / bench_stat_filename
 
@@ -38,10 +42,16 @@ if __name__ == "__main__":
     )
 
     # 1. Get dataset
+    # TODO: I dont understand this partial. Here i have more general concern -- maybe pycharm_like_data_prompt should
+    #  be a part of TaskChanger not independent parameter.
     pycharm_like_data_prompt = partial(
         pycharm_like_data_prompt, prompt=pipline_parameters.instructs["data instruct"]
     )
+    # TODO: lets decouple Task Changer and PlotDataLoader.
+    #  We can init raw data with RawPlotDataLoader and only then apply TaskChanger
+    #  to change tasks and get final dataset as result
     task_changer = TaskChanger(data_descr_changer=pycharm_like_data_prompt)
+
     dataset = PlotDataLoader(
         pipline_parameters.dataset_folder, shuffle=False, task_changer=task_changer
     )
@@ -57,6 +67,7 @@ if __name__ == "__main__":
 
         # For dev purposes
         ids_to_test = [19, 20, 45, 62, 77, 96, 97, 107, 108, 109, 135, 137, 142, 144, 154, 186, 195, 211, 260, 299]
+        # TODO: Could be oneliner
         dataset_filtered = []
         for item in dataset:
             if item.id in ids_to_test:

@@ -31,7 +31,8 @@ class PlotDataPoint:
     id: int
     dp_path: Path  # TODO is it ok, or better make it str?
 
-
+# TODO: I would like to have a discussion there. Im not sure that we need to create so low level dataset here.
+#  Why we can just use DataFrame?
 class PlotRawDataLoader:
 
     """
@@ -72,7 +73,7 @@ class PlotRawDataLoader:
             )
 
         plot_file = Path(plot_files[0])
-
+        # TODO: cycle?
         with open(task_file, "r") as f:
             task_dict = json.load(f)
         with open(code_plot_file, "r") as f:

@@ -4,7 +4,7 @@ import pandas as pd
 
 
 class TaskChanger:
-
+    #  TODO: Lets design it in a way that user wil inherit this class to write custom descriptions
     """
     Class that changes the task for the plotting
     init take three callables:
@@ -24,6 +24,13 @@ class TaskChanger:
         self.data_descr_changer = data_descr_changer
         self.style_changer = style_changer
 
+        self.cahnge_mapping = {
+            'python_desciption': self.get_pycharm_desriptions
+        }
+
+    # self.cahnge_mapping['python_desciption']()
+
+
     # TODO how to annotate datapoint: PlotDataPoint without circular import?
     def change_task(self, datapoint) -> Dict:
         task = datapoint.task
@@ -39,3 +46,7 @@ class TaskChanger:
             task["plot style"] = self.style_changer(task_text=task["plot style"])
 
         return datapoint.task
+
+
+    def get_pycharm_desriptions(self):
+        pass

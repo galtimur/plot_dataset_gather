@@ -16,6 +16,7 @@ class PipelineParameters:
     dataset_folder: Path
     output_file: Path
     out_folder: Path
+    # TODO: lets avoid storing the token in data structure directly
     openai_token: str
     instructs: dict
     existing_ids: list
@@ -31,7 +32,7 @@ def prepare_pipeline(config_path, out_filename, prompt_file_path):
     output_file = out_folder / out_filename
 
     os.makedirs(out_folder, exist_ok=True)
-
+    # TODO: please use environmental variables to read tokens. For example one may use python-dotenv package
     with open(openai_token_file, "r") as f:
         openai_token = f.read()
 

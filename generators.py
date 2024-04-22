@@ -53,11 +53,14 @@ class CodePlotGenerator:
         plotting_prompt: str = "",
         system_prompt: str = "",
     ):
+
+        # TODO: Grazie support?
         self.model = model
         self.plotting_prompt = plotting_prompt
         self.system_prompt = system_prompt
         self.output_file = Path(output_file)
 
+    # TODO:im not sure that it should be here
     def gather_code(self, answer: str) -> str:
         """
         Gather all python code blocks in a response to a single code
@@ -126,6 +129,7 @@ class CodePlotGenerator:
         return responses
 
 
+# TODO: why do you use jupyter notebook to run python code an then parse the plots? why not exec()?
 class VisGenerator:
 
     """
