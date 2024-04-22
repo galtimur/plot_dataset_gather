@@ -12,7 +12,7 @@ from utils import read_jsonl
 
 if __name__ == "__main__":
     config_path = "configs/config.yaml"
-    out_filename = "gpt_plots_test.jsonl"
+    out_filename = "gpt_plots_dev.jsonl"
     bench_results_filename = "benchmark_results.jsonl"
     bench_stat_filename = "benchmark_stat.json"
     plot_gen_prompt_file = "prompts/plot_gen.json"
@@ -24,8 +24,8 @@ if __name__ == "__main__":
     bench_results_file = pipline_parameters.out_folder / bench_results_filename
     bench_stat_file = pipline_parameters.out_folder / bench_stat_filename
 
-    generate_code = False
-    draw_plots = False
+    generate_code = True
+    draw_plots = True
     run_benchmark = True
 
     # 0. Initialize the model
@@ -55,7 +55,16 @@ if __name__ == "__main__":
             system_prompt=pipline_parameters.instructs["system prompt"],
         )
 
-        dataset = dataset[0:2]  # For dev purposes
+        # For dev purposes
+        ids_to_test = [19, 20, 45, 62, 77, 96, 97, 107, 108, 109, 135, 137, 142, 144, 154, 186, 195, 211, 260, 299]
+        dataset_filtered = []
+        for item in dataset:
+            if item.id in ids_to_test:
+                dataset_filtered.append(item)
+
+        # dataset = dataset[0:2]  # For dev purposes
+        dataset = dataset_filtered
+
         with open(pipline_parameters.output_file, "a") as f:
             json.dump(pipline_parameters.instructs, f)
             f.write("\n")

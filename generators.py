@@ -104,6 +104,7 @@ class CodePlotGenerator:
 
     def generate_codeplot_datapoints(self, dataset: PlotDataLoader):
         print("Requesting the model to write a code for plots")
+        print(f"Results would be saved in {self.output_file}")
         responses = []
         for item in tqdm(dataset):
             # TODO refactor

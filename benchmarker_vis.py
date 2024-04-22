@@ -56,8 +56,14 @@ class VisJudge:
         Score each plotted plot by LLM comparing with baseline image
         """
 
+        print("Running plots scoring")
+        print(f"Results would be saved in {self.output_file_bench }")
+        with open(self.output_file_bench, "a") as f:
+            json.dump({"request judge":self.prompts["request judge"]}, f)
+            f.write("\n")
+
         benchmark_results = []
-        for result in results_plot:
+        for result in tqdm(results_plot):
             if "id" not in result:
                 continue
             idx = result["id"]
