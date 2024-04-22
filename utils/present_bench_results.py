@@ -10,9 +10,9 @@ from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.shared import Inches
 from omegaconf import OmegaConf
 
-parent_dir = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(parent_dir)
+print(parent_dir)
 from utils import read_responses
 
 
@@ -33,7 +33,8 @@ suffix = ""
 if do_random and len(suffix) == 0:
     suffix = "_random"
 
-config_path = "../configs/config.yaml"
+# config_path = "../configs/config.yaml"
+config_path = "configs/config.yaml"
 config = OmegaConf.load(config_path)
 
 dataset_folder = Path(config.dataset_final)
@@ -49,7 +50,7 @@ plot_responses = read_responses(response_file)
 temp_image_file = temp_folder / "plot.png"
 
 # list of strings
-ids = list(results.keys())
+ids = list(bench_scores.keys())
 
 doc = Document()
 section = doc.sections[0]
@@ -58,8 +59,9 @@ section.page_width = new_width
 section.page_height = new_height
 
 for idx in ids:
+
     response = plot_responses[idx]
-    result = results[idx]
+    result = bench_scores[idx]
 
     paragraph = doc.add_paragraph()
     paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
@@ -93,8 +95,8 @@ for idx in ids:
     cell = table.cell(0, 0)
     cell.text = "Generated"
 
-    if len(response["images"]) > 0:
-        decode_image(response["images"][0], temp_image_file)
+    if len(response["plot results"]["images"]) > 0:
+        decode_image(response["plot results"]["images"][0], temp_image_file)
 
         paragraph = cell.paragraphs[0]
         run = paragraph.add_run()
@@ -108,4 +110,4 @@ for idx in ids:
 
     doc.add_page_break()
 
-doc.save(Path(config.out_folder) / f"bench_results{suffix}.docx")
+doc.save("out/bench_results.docx")
