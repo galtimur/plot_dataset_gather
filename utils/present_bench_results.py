@@ -2,12 +2,18 @@ import base64
 import glob
 import json
 import os
+import sys
 from pathlib import Path
 
 from docx import Document
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.shared import Inches
 from omegaconf import OmegaConf
+
+parent_dir = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(parent_dir)
+from utils import read_responses
 
 
 def decode_image(encoded_image, output_image_file):
@@ -27,21 +33,18 @@ suffix = ""
 if do_random and len(suffix) == 0:
     suffix = "_random"
 
-config_path = "configs/config.yaml"
+config_path = "../configs/config.yaml"
 config = OmegaConf.load(config_path)
 
 dataset_folder = Path(config.dataset_final)
 results_folder = Path(config.out_folder)
 temp_folder = results_folder / "temp"
 os.makedirs(temp_folder, exist_ok=True)
-results_file = results_folder / f"benchmark_results{suffix}.json"
-response_file = results_folder / "gpt_plots_results.json"
+bench_file = results_folder / f"benchmark_results.jsonl"
+response_file = results_folder / "gpt_plots_dev.jsonl"
 
-with open(results_file, "r") as f:
-    results = json.load(f)
-
-with open(response_file, "r") as f:
-    plot_responses = json.load(f)
+bench_scores = read_responses(bench_file)
+plot_responses = read_responses(response_file)
 
 temp_image_file = temp_folder / "plot.png"
 
