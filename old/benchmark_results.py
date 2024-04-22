@@ -10,7 +10,8 @@ from tqdm import tqdm
 
 from data import get_dp_folders
 from GPT4V_backbone import GPT4V
-from LLM_utils import generate_benchmark_request, prepare_pipeline, read_task_responses
+from LLM_utils import (generate_benchmark_request, prepare_pipeline,
+                       read_task_responses)
 from utils import read_jsonl
 
 

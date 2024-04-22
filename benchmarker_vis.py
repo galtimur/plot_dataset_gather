@@ -51,15 +51,15 @@ class VisJudge:
         else:
             return None
 
-    def score_by_LLM(self, results_plot: dict) -> List[Dict]:
+    def score_by_LLM(self, results_plot: List[Dict]) -> List[Dict]:
         """
         Score each plotted plot by LLM comparing with baseline image
         """
 
         print("Running plots scoring")
-        print(f"Results would be saved in {self.output_file_bench }")
+        print(f"Results would be saved in {self.output_file_bench}")
         with open(self.output_file_bench, "a") as f:
-            json.dump({"request judge":self.prompts["request judge"]}, f)
+            json.dump({"request judge": self.prompts["request judge"]}, f)
             f.write("\n")
 
         benchmark_results = []
@@ -139,15 +139,24 @@ class VisJudge:
 
     def get_benchmark_scores(
         self,
-        results_plot: dict | None = None,
+        results_plot: List[Dict] | None = None,
+        results_plot_file: str | Path | None = None,
         benchmark_results: List[Dict] | None = None,
         benchmark_results_file: str | Path | None = None,
     ) -> Union[Tuple[List, dict], Tuple[None, None]]:
         if benchmark_results is None and benchmark_results_file is None:
-            if results_plot is None:
+            if results_plot is None and results_plot_file is None:
                 print("Nothing to analyze is provided")
                 return None, None
+            elif results_plot is not None:
+                pass
+            elif results_plot_file is not None:
+                results_plot = read_jsonl(results_plot_file)
+            if results_plot is not None and results_plot_file is not None:
+                print("You passed both function path and scoring responses list")
+                print("The list would be used")
             benchmark_results = self.score_by_LLM(results_plot)
+
         elif benchmark_results is None:
             benchmark_results = read_jsonl(benchmark_results_file)
         elif benchmark_results is not None and benchmark_results_file is not None:
